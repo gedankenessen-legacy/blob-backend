@@ -28,9 +28,9 @@ namespace Blob_API
         public void ConfigureServices(IServiceCollection services)
         {
             // Datenbank Kontext anlegen
-            services.AddDbContext<p1_aContext>(opt =>
+            services.AddDbContext<BlobContext>(opt =>
             {
-                opt.UseMySql("server=91.134.156.94;database=p1_a;user=p1_a;password=7q6iEa#4;sslmode=None;connection timeout=300;default command timeout=300");
+                opt.UseMySql("server=176.31.26.11;database=Blob;user=remote_db;password=remote2251;sslmode=None;connection timeout=300;default command timeout=300");
             });
 
             // NewtonsoftJson nutzen und konfigurieren
