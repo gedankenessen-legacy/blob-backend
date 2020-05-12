@@ -12,6 +12,7 @@ namespace Blob_API.Controllers
     [ApiController]
     public class OrderController : ControllerBase
     {
+        private int test;
         private readonly BlobContext _context;
 
         public OrderController(BlobContext context)
