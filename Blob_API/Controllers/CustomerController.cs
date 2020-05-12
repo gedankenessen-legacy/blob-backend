@@ -33,6 +33,29 @@ namespace Blob_API.Controllers
             return Ok(res);
         }
 
+        [HttpPost]
+        public ActionResult<IEnumerable<Order>> CreateCustomer([FromBody] Customer newCust)
+        {
+            _context.Customer.Add(newCust);
+            _context.SaveChanges();
+
+            return Ok();
+        }
+
+        [HttpDelete("{id}")]
+        public ActionResult<IEnumerable<Order>> DeleteCustomer(int id)
+        {
+            Customer delCust = _context.Customer.Find(id);
+
+            if (delCust == null)
+                return NotFound();
+
+            _context.Customer.Remove(delCust);
+            _context.SaveChanges();
+
+            return Ok();
+        }
+
 
     }
 }
