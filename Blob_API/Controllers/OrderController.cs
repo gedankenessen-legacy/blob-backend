@@ -13,7 +13,6 @@ namespace Blob_API.Controllers
     [ApiController]
     public class OrderController : ControllerBase
     {
-        private int test;
         private readonly BlobContext _context;
 
         public OrderController(BlobContext context)
@@ -27,7 +26,16 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<IEnumerable<Order>>> GetAllOrdersAsync()
         {
-            return Ok(await _context.Order.ToListAsync());
+            // ? .Include(...) includes the elements of other tables to this 'query-object'.
+            var orderList = await _context.Order
+                                    .Include(order => order.Customer)
+                                    .Include(order => order.OrderedCustomer)
+                                    .Include(order => order.State)
+                                    .Include(order => order.OrderedProductOrder)
+                                        .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
+                                    .ToListAsync();
+
+            return Ok(orderList);
         }
 
         // GET api/order/5
