@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Blob_API.Model;
+using Microsoft.EntityFrameworkCore;
 
 namespace Blob_API.Controllers
 {
@@ -21,16 +22,21 @@ namespace Blob_API.Controllers
 
         // GET api/order
         [HttpGet]
-        public ActionResult<IEnumerable<Order>> GetAllOrders()
+        [ProducesResponseType(200)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<IEnumerable<Order>>> GetAllOrdersAsync()
         {
-            return _context.Order.ToList();
+            return Ok(await _context.Order.ToListAsync());
         }
 
         // GET api/order/5
         [HttpGet("{id}")]
-        public ActionResult<Order> GetAllOrders(int id)
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<Order>> GetOrderAsync(int id)
         {
-            var res = _context.Order.Find(id);
+            var res = await _context.Order.FindAsync(id);
 
             if (res == null)
             {
@@ -40,14 +46,17 @@ namespace Blob_API.Controllers
             return Ok(res);
         }
 
+        // POST api/order
         [HttpPost]
-        public ActionResult<IEnumerable<Order>> CreateOrders([FromBody] Order newOrder)
+        [ProducesResponseType(201)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<IEnumerable<Order>>> CreateOrdersAsync([FromBody] Order newOrder)
         {
-            var res = _context.Order.Select(order => order.Id == 5);
+            var res = await _context.Order.AddAsync(newOrder);
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Created("", res);
         }
     }
 }
