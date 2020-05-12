@@ -11,5 +11,6 @@ namespace Blob_API.Controllers
     [ApiController]
     public class ProductController : ControllerBase
     {
+        private int test = 10;
     }
 }
