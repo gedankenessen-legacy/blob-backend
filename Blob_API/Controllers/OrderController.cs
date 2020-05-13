@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Internal;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Blob_API.Model;
+using Microsoft.EntityFrameworkCore;
 
 namespace Blob_API.Controllers
 {
@@ -21,33 +19,73 @@ namespace Blob_API.Controllers
 
         // GET api/order
         [HttpGet]
-        public ActionResult<IEnumerable<Order>> GetAllOrders()
+        [ProducesResponseType(200)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<IEnumerable<Order>>> GetAllOrdersAsync()
         {
-            return _context.Order.ToList();
+            // ? .Include(...) includes the elements of other tables to this 'query-object'.
+            var orderList = await _context.Order
+                                    .Include(order => order.Customer)
+                                    .Include(order => order.OrderedCustomer)
+                                    .Include(order => order.State)
+                                    .Include(order => order.OrderedProductOrder)
+                                        .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
+                                    .ToListAsync();
+
+            return Ok(orderList);
         }
 
         // GET api/order/5
         [HttpGet("{id}")]
-        public ActionResult<Order> GetAllOrders(int id)
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<Order>> GetOrderAsync(uint id)
         {
-            var res = _context.Order.Find(id);
+            // TODO: check/validate/sanitize values.
+            if (id < 0)
+            {
+                return BadRequest();
+            }
 
-            if (res == null)
+            var order = await _context.Order
+                                    .Include(order => order.Customer)
+                                    .Include(order => order.OrderedCustomer)
+                                    .Include(order => order.State)
+                                    .Include(order => order.OrderedProductOrder)
+                                        .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
+                                    .SingleAsync(order => order.Id == id); // Find() does not support a IIncludableQuerry in front of it.
+
+            if (order == null)
             {
                 return NotFound();
             }
 
-            return Ok(res);
+            return Ok(order);
         }
 
+        // POST api/order
         [HttpPost]
-        public ActionResult<IEnumerable<Order>> CreateOrders([FromBody] Order newOrder)
+        [ProducesResponseType(201)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<IEnumerable<Order>>> CreateOrdersAsync([FromBody] Order newOrder)
         {
-            var res = _context.Order.Select(order => order.Id == 5);
+            // TODO: check/validate/sanitize values.
 
-            _context.SaveChanges();
+            var valueTask = await _context.Order.AddAsync(newOrder);
 
-            return NoContent();
+            await _context.SaveChangesAsync();
+
+            var newCreatedOrder = await _context.Order
+                                    .Include(order => order.Customer)
+                                    .Include(order => order.OrderedCustomer)
+                                    .Include(order => order.State)
+                                    .Include(order => order.OrderedProductOrder)
+                                    .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
+                                    .SingleAsync(order => order.Id == valueTask.Entity.Id);
+
+            return Created($"api/order/{newCreatedOrder.Id}", newCreatedOrder);
         }
     }
 }
