@@ -38,5 +38,35 @@ namespace Blob_API.Controllers
             return Ok(res);
         }
 
+        [HttpPut]
+        public ActionResult<IEnumerable<Product>> UpdateProducts(IEnumerable<Product> products)
+        {
+            //TODO Implementierung der Methode
+            return null;
+        }
+
+        [HttpPost]
+        public ActionResult<Product> CreateProduct(Product product)
+        {
+            //TODO Implementierung der Methode
+            return null;
+        }
+
+        [HttpDelete("{id}")]
+        public void DeleteProduct(int id)
+        {
+            var res = _context.Product.Find(id);
+
+            if (res != null)
+            {
+                _context.Product.Remove(res);
+                _context.SaveChanges();
+            }
+            else
+            {
+                //TODO Eine Fehler Meldung Hinzufügen  
+            }
+        }
+
     }
 }
