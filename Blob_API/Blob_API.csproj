@@ -26,10 +26,4 @@
   <ItemGroup>
     <Compile Remove="DB.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Remove="appsettings.json" />
-    <Content Remove="appsettings.Development.json" />
-    <Content Remove="appsettings.json" />
-    <Content Remove="appsettings.Development.json" />
-  </ItemGroup>
 </Project>

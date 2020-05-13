@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Blob_API.Controllers;
 using Blob_API.Model;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +16,14 @@ namespace Blob_API_Tests.Controllers
         // Arrange = Setup
         private readonly OrderController _orderController;
         private readonly BlobContext _blobContext;
+        private Order newOrder = new Order()
+        {
+            Id = 1,
+            CreatedAt = DateTime.Parse("2020-05-12 21:32:43"),
+            CustomerId = 1,
+            OrderedCustomerId = 1,
+            StateId = 2
+        };
 
         public OrderControllerTest()
         {
@@ -22,31 +33,26 @@ namespace Blob_API_Tests.Controllers
             options = builder.Options;
             _blobContext = new BlobContext(options);
 
+            SeedDatabase.SeedDatabaseWithDefaultData(_blobContext);
 
             _orderController = new OrderController(_blobContext);
         }
 
         [Fact]
-        public void GetAllOrders()
+        public async Task GetAllOrdersAsync()
         {
-            // Arrange = Setup
-            _blobContext.Order.Add(new Order()
-            {
-                Id = 1,
-                CreatedAt = new DateTime(),
-                CustomerId = 1,
-                OrderedCustomerId = 1,
-                StateId = 1
-            });
-
-            _blobContext.SaveChanges();
-
             // Act = Processing
-            var res = _orderController.GetAllOrders();
+            var task = await _orderController.GetAllOrdersAsync();
+            OkObjectResult result = task.Result as OkObjectResult;
+            var list = result.Value as List<Order>;
+            var testee = list.FirstOrDefault();
 
-            // Assert = Testing
-            // res.Result for example OK(...)
-            Assert.IsType<ActionResult<Order>>(res.Result);
+            // Assert
+            Assert.Equal(newOrder.Id, testee.Id);
+            Assert.Equal(newOrder.CreatedAt, testee.CreatedAt);
+            Assert.Equal(newOrder.CustomerId, testee.CustomerId);
+            Assert.Equal(newOrder.OrderedCustomerId, testee.OrderedCustomerId);
+            Assert.Equal(newOrder.StateId, testee.StateId);
         }
     }
 }
