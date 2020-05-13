@@ -1,11 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Internal;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Blob_API.Model;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper;
+using Blob_API.RessourceModels;
 
 namespace Blob_API.Controllers
 {
@@ -14,17 +13,19 @@ namespace Blob_API.Controllers
     public class OrderController : ControllerBase
     {
         private readonly BlobContext _context;
+        private readonly IMapper _mapper;
 
-        public OrderController(BlobContext context)
+        public OrderController(BlobContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         // GET api/order
         [HttpGet]
         [ProducesResponseType(200)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<IEnumerable<Order>>> GetAllOrdersAsync()
+        public async Task<ActionResult<IEnumerable<OrderRessource>>> GetAllOrdersAsync()
         {
             // ? .Include(...) includes the elements of other tables to this 'query-object'.
             var orderList = await _context.Order
@@ -35,7 +36,10 @@ namespace Blob_API.Controllers
                                         .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
                                     .ToListAsync();
 
-            return Ok(orderList);
+            // Order -> OrderRessource mapping/conversion/casting...
+            var orderRessourceList = _mapper.Map<IEnumerable<Order>, IEnumerable<OrderRessource>>(orderList);
+
+            return Ok(orderRessourceList);
         }
 
         // GET api/order/5
@@ -43,29 +47,48 @@ namespace Blob_API.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<Order>> GetOrderAsync(int id)
+        public async Task<ActionResult<OrderRessource>> GetOrderAsync(uint id)
         {
-            var res = await _context.Order.FindAsync(id);
+            var order = await _context.Order
+                                    .Include(order => order.Customer)
+                                    .Include(order => order.OrderedCustomer)
+                                    .Include(order => order.State)
+                                    .Include(order => order.OrderedProductOrder)
+                                        .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
+                                    .SingleAsync(order => order.Id == id); // Find() does not support a IIncludableQuerry in front of it.
 
-            if (res == null)
+
+            var orderRessource = _mapper.Map<Order, OrderRessource>(order);
+
+            if (orderRessource == null)
             {
                 return NotFound();
             }
 
-            return Ok(res);
+            return Ok(orderRessource);
         }
 
         // POST api/order
         [HttpPost]
         [ProducesResponseType(201)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<IEnumerable<Order>>> CreateOrdersAsync([FromBody] Order newOrder)
+        public async Task<ActionResult<IEnumerable<OrderRessource>>> CreateOrdersAsync([FromBody] Order newOrder)
         {
-            var res = await _context.Order.AddAsync(newOrder);
+            var valueTask = await _context.Order.AddAsync(newOrder);
 
             await _context.SaveChangesAsync();
 
-            return Created("", res);
+            var newCreatedOrder = await _context.Order
+                                    .Include(order => order.Customer)
+                                    .Include(order => order.OrderedCustomer)
+                                    .Include(order => order.State)
+                                    .Include(order => order.OrderedProductOrder)
+                                    .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
+                                    .SingleAsync(order => order.Id == valueTask.Entity.Id);
+
+            var newCreatedOrderRessource = _mapper.Map<Order, OrderRessource>(newCreatedOrder);
+
+            return Created("", newCreatedOrderRessource);
         }
     }
 }
