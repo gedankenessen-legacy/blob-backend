@@ -19,10 +19,10 @@ namespace Blob_API_Tests.Controllers
         private Order newOrder = new Order()
         {
             Id = 1,
-            CreatedAt = new DateTime(),
+            CreatedAt = DateTime.Parse("2020-05-12 21:32:43"),
             CustomerId = 1,
             OrderedCustomerId = 1,
-            StateId = 1
+            StateId = 2
         };
 
         public OrderControllerTest()
@@ -33,8 +33,7 @@ namespace Blob_API_Tests.Controllers
             options = builder.Options;
             _blobContext = new BlobContext(options);
 
-            SeedDatabase();
-
+            SeedDatabase.SeedDatabaseWithDefaultData(_blobContext);
 
             _orderController = new OrderController(_blobContext);
         }
@@ -43,21 +42,17 @@ namespace Blob_API_Tests.Controllers
         public async Task GetAllOrdersAsync()
         {
             // Act = Processing
-            var res = await _orderController.GetAllOrdersAsync();
-            List<Order> value = res.Value.ToList();
+            var task = await _orderController.GetAllOrdersAsync();
+            OkObjectResult result = task.Result as OkObjectResult;
+            var list = result.Value as List<Order>;
+            var testee = list.FirstOrDefault();
 
-            //Console.WriteLine(value);
-
-            // Assert = Testing
-            // Assert.IsType<Task<ActionResult<IEnumerable<Order>>>>(res);
-            Assert.NotEqual(newOrder, value.First());
-        }
-
-        private void SeedDatabase()
-        {
-            // Arrange = Setup
-            _blobContext.Order.Add(newOrder);
-            _blobContext.SaveChanges();
+            // Assert
+            Assert.Equal(newOrder.Id, testee.Id);
+            Assert.Equal(newOrder.CreatedAt, testee.CreatedAt);
+            Assert.Equal(newOrder.CustomerId, testee.CustomerId);
+            Assert.Equal(newOrder.OrderedCustomerId, testee.OrderedCustomerId);
+            Assert.Equal(newOrder.StateId, testee.StateId);
         }
     }
 }
