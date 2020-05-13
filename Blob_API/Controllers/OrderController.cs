@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Internal;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Blob_API.Model;
 using Microsoft.EntityFrameworkCore;
@@ -26,24 +23,46 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<IEnumerable<Order>>> GetAllOrdersAsync()
         {
-            return Ok(await _context.Order.ToListAsync());
+            // ? .Include(...) includes the elements of other tables to this 'query-object'.
+            var orderList = await _context.Order
+                                    .Include(order => order.Customer)
+                                    .Include(order => order.OrderedCustomer)
+                                    .Include(order => order.State)
+                                    .Include(order => order.OrderedProductOrder)
+                                        .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
+                                    .ToListAsync();
+
+            return Ok(orderList);
         }
 
         // GET api/order/5
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<Order>> GetOrderAsync(int id)
+        public async Task<ActionResult<Order>> GetOrderAsync(uint id)
         {
-            var res = await _context.Order.FindAsync(id);
+            // TODO: check/validate/sanitize values.
+            if (id < 0)
+            {
+                return BadRequest();
+            }
 
-            if (res == null)
+            var order = await _context.Order
+                                    .Include(order => order.Customer)
+                                    .Include(order => order.OrderedCustomer)
+                                    .Include(order => order.State)
+                                    .Include(order => order.OrderedProductOrder)
+                                        .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
+                                    .SingleAsync(order => order.Id == id); // Find() does not support a IIncludableQuerry in front of it.
+
+            if (order == null)
             {
                 return NotFound();
             }
 
-            return Ok(res);
+            return Ok(order);
         }
 
         // POST api/order
@@ -52,11 +71,21 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<IEnumerable<Order>>> CreateOrdersAsync([FromBody] Order newOrder)
         {
-            var res = await _context.Order.AddAsync(newOrder);
+            // TODO: check/validate/sanitize values.
+
+            var valueTask = await _context.Order.AddAsync(newOrder);
 
             await _context.SaveChangesAsync();
 
-            return Created("", res);
+            var newCreatedOrder = await _context.Order
+                                    .Include(order => order.Customer)
+                                    .Include(order => order.OrderedCustomer)
+                                    .Include(order => order.State)
+                                    .Include(order => order.OrderedProductOrder)
+                                    .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
+                                    .SingleAsync(order => order.Id == valueTask.Entity.Id);
+
+            return Created($"api/order/{newCreatedOrder.Id}", newCreatedOrder);
         }
     }
 }
