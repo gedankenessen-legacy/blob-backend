@@ -35,8 +35,7 @@ namespace Blob_API.Model
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-                optionsBuilder.UseMySql("server=176.31.26.11;database=Blob;user=remote_db;password=remote2251;sslmode=None;connection timeout=300;default command timeout=300", x => x.ServerVersion("10.4.12-mariadb"));
+                optionsBuilder.UseMySql("", x => x.ServerVersion("10.4.12-mariadb"));
             }
         }
 
