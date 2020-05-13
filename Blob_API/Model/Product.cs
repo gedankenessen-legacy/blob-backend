@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Blob_API.Model
 {
@@ -21,6 +22,7 @@ namespace Blob_API.Model
 
         public virtual ICollection<CategoryProduct> CategoryProduct { get; set; }
         public virtual ICollection<LocationProduct> LocationProduct { get; set; }
+        [JsonIgnore]
         public virtual ICollection<OrderedProduct> OrderedProduct { get; set; }
         public virtual ICollection<ProductProperty> ProductProperty { get; set; }
     }
