@@ -25,7 +25,7 @@ namespace Blob_API.Controllers
         [HttpGet]
         [ProducesResponseType(200)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<IEnumerable<OrderRessource>>> GetAllOrdersAsync()
+        public async Task<ActionResult<IEnumerable<Order>>> GetAllOrdersAsync()
         {
             // ? .Include(...) includes the elements of other tables to this 'query-object'.
             var orderList = await _context.Order
@@ -37,9 +37,10 @@ namespace Blob_API.Controllers
                                     .ToListAsync();
 
             // Order -> OrderRessource mapping/conversion/casting...
-            var orderRessourceList = _mapper.Map<IEnumerable<Order>, IEnumerable<OrderRessource>>(orderList);
+            //var orderRessourceList = _mapper.Map<IEnumerable<Order>, IEnumerable<OrderRessource>>(orderList);
 
-            return Ok(orderRessourceList);
+            //return Ok(orderRessourceList);
+            return Ok(orderList);
         }
 
         // GET api/order/5
@@ -49,6 +50,8 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<OrderRessource>> GetOrderAsync(uint id)
         {
+            // TODO: check/validate/sanitize values.
+
             var order = await _context.Order
                                     .Include(order => order.Customer)
                                     .Include(order => order.OrderedCustomer)
@@ -74,6 +77,8 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<IEnumerable<OrderRessource>>> CreateOrdersAsync([FromBody] Order newOrder)
         {
+            // TODO: check/validate/sanitize values.
+
             var valueTask = await _context.Order.AddAsync(newOrder);
 
             await _context.SaveChangesAsync();
