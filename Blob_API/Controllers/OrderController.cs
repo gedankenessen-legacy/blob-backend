@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Blob_API.Model;
 using Microsoft.EntityFrameworkCore;
-using AutoMapper;
 
 namespace Blob_API.Controllers
 {
