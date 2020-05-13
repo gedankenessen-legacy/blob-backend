@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Blob_API.Model;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
-using Blob_API.RessourceModels;
 
 namespace Blob_API.Controllers
 {
@@ -13,12 +12,10 @@ namespace Blob_API.Controllers
     public class OrderController : ControllerBase
     {
         private readonly BlobContext _context;
-        private readonly IMapper _mapper;
 
-        public OrderController(BlobContext context, IMapper mapper)
+        public OrderController(BlobContext context)
         {
             _context = context;
-            _mapper = mapper;
         }
 
         // GET api/order
@@ -42,11 +39,16 @@ namespace Blob_API.Controllers
         // GET api/order/5
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
         public async Task<ActionResult<Order>> GetOrderAsync(uint id)
         {
             // TODO: check/validate/sanitize values.
+            if (id < 0)
+            {
+                return BadRequest();
+            }
 
             var order = await _context.Order
                                     .Include(order => order.Customer)
@@ -84,7 +86,7 @@ namespace Blob_API.Controllers
                                     .ThenInclude(orderedProductOrder => orderedProductOrder.OrderedProduct)
                                     .SingleAsync(order => order.Id == valueTask.Entity.Id);
 
-            return Created("", newCreatedOrder);
+            return Created($"api/order/{newCreatedOrder.Id}", newCreatedOrder);
         }
     }
 }
