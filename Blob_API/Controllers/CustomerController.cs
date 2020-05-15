@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Blob_API.Model;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.CodeDom;
 
 namespace Blob_API.Controllers
 {
@@ -14,48 +13,69 @@ namespace Blob_API.Controllers
     {
         private readonly BlobContext _context;
 
-        [HttpGet]
-        public ActionResult<IEnumerable<Customer>> GetAllCustomers()
+        public CustomerController(BlobContext context)
         {
-            return _context.Customer.ToList();
+            _context = context;
         }
 
-        [HttpGet("{id}")]
-        public ActionResult<Order> GetCustomer(int id)
+        // GET api/order
+        [HttpGet]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<IEnumerable<Customer>>> GetAllCustomersAsync()
         {
-            var res = _context.Customer.Find(id);
+            // ? .Include(...) includes the elements of other tables to this 'query-object'.
+            var customerList = await _context.Customer
+                                    .Include(customer => customer.Address)
+                                    .ToListAsync();
 
-            if (res == null)
+            return Ok(customerList);
+        }
+
+        // GET api/order/5
+        [HttpGet("{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<Customer>> GetCustomersAsync(uint id)
+        {
+            // TODO: check/validate/sanitize values.
+            if (id < 0)
+            {
+                return BadRequest();
+            }
+            var customer = await _context.Customer
+                                    .Include(customer => customer.Address)
+                                    .SingleAsync(customer => customer.Id == id);
+
+            
+
+            if (customer == null)
             {
                 return NotFound();
             }
 
-            return Ok(res);
+            return Ok(customer);
         }
 
+        // POST api/order
         [HttpPost]
-        public ActionResult<IEnumerable<Order>> CreateCustomer([FromBody] Customer newCust)
+        [ProducesResponseType(201)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<IEnumerable<Order>>> CreateOrdersAsync([FromBody] Customer newCustomer)
         {
-            _context.Customer.Add(newCust);
-            _context.SaveChanges();
+            // TODO: check/validate/sanitize values.
 
-            return Ok();
+            var valueTask = await _context.Customer.AddAsync(newCustomer);
+
+            await _context.SaveChangesAsync();
+
+            var newCreatedCustomer = await _context.Customer
+                                    .Include(customer => customer.Address)
+                                    .SingleAsync(customer => customer.Id == valueTask.Entity.Id);
+
+            return Created($"api/customer/{newCreatedCustomer.Id}", newCreatedCustomer);
         }
-
-        [HttpDelete("{id}")]
-        public ActionResult<IEnumerable<Order>> DeleteCustomer(int id)
-        {
-            Customer delCust = _context.Customer.Find(id);
-
-            if (delCust == null)
-                return NotFound();
-
-            _context.Customer.Remove(delCust);
-            _context.SaveChanges();
-
-            return Ok();
-        }
-
-
     }
 }
