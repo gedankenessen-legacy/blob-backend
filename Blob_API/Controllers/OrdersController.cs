@@ -11,11 +11,11 @@ namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class OrderController : ControllerBase
+    public class OrdersController : ControllerBase
     {
         private readonly BlobContext _context;
 
-        public OrderController(BlobContext context)
+        public OrdersController(BlobContext context)
         {
             _context = context;
         }
@@ -23,7 +23,7 @@ namespace Blob_API.Controllers
         // GET: api/Order
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<ActionResult<IEnumerable<Order>>> GetOrder()
+        public async Task<ActionResult<IEnumerable<Order>>> GetOrdersAsync()
         {
             return await _context.Order.ToListAsync();
         }
@@ -33,7 +33,7 @@ namespace Blob_API.Controllers
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<Order>> GetOrder(uint id)
+        public async Task<ActionResult<Order>> GetOrderAsync(uint id)
         {
             var order = await _context.Order.FindAsync(id);
 
@@ -47,7 +47,7 @@ namespace Blob_API.Controllers
 
         // PUT: api/Order/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutOrder(uint id, [FromBody] Order order)
+        public async Task<IActionResult> PutOrderAsync(uint id, [FromBody] Order order)
         {
             // TODO: check/validate/sanitize values.
 
@@ -80,7 +80,7 @@ namespace Blob_API.Controllers
         // POST: api/Order
         [HttpPost]
         [ProducesResponseType(201)]
-        public async Task<ActionResult<Order>> PostOrder([FromBody] Order order)
+        public async Task<ActionResult<Order>> PostOrderAsync([FromBody] Order order)
         {
             // TODO: check/validate/sanitize values.
 

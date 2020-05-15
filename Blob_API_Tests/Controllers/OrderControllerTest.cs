@@ -14,7 +14,7 @@ namespace Blob_API_Tests.Controllers
     public class OrderControllerTest
     {
         // Arrange = Setup
-        private readonly OrderController _orderController;
+        private readonly OrdersController _ordersController;
         private readonly BlobContext _blobContext;
         private Order newOrder = new Order()
         {
@@ -35,14 +35,14 @@ namespace Blob_API_Tests.Controllers
 
             SeedDatabase.SeedDatabaseWithDefaultData(_blobContext);
 
-            _orderController = new OrderController(_blobContext);
+            _ordersController = new OrdersController(_blobContext);
         }
 
         [Fact]
         public async Task GetAllOrdersAsync()
         {
             // Act = Processing
-            var task = await _orderController.GetAllOrdersAsync();
+            var task = await _ordersController.GetOrdersAsync();
             OkObjectResult result = task.Result as OkObjectResult;
             var list = result.Value as List<Order>;
             var testee = list.FirstOrDefault();
