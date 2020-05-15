@@ -11,7 +11,7 @@ using Xunit;
 namespace Blob_API_Tests.Controllers
 {
     // Use: AAA principle (Arrange, Act and Assert)
-    public class OrderControllerTest
+    public class OrdersControllerTest
     {
         // Arrange = Setup
         private readonly OrdersController _ordersController;
@@ -25,7 +25,7 @@ namespace Blob_API_Tests.Controllers
             StateId = 2
         };
 
-        public OrderControllerTest()
+        public OrdersControllerTest()
         {
             DbContextOptions<BlobContext> options;
             var builder = new DbContextOptionsBuilder<BlobContext>();

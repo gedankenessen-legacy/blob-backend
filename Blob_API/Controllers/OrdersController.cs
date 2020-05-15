@@ -25,7 +25,7 @@ namespace Blob_API.Controllers
         [ProducesResponseType(200)]
         public async Task<ActionResult<IEnumerable<Order>>> GetOrdersAsync()
         {
-            return await _context.Order.ToListAsync();
+            return Ok(await _context.Order.ToListAsync());
         }
 
         // GET: api/Order/5
@@ -42,7 +42,7 @@ namespace Blob_API.Controllers
                 return NotFound();
             }
 
-            return order;
+            return Ok(order);
         }
 
         // PUT: api/Order/5
@@ -87,7 +87,7 @@ namespace Blob_API.Controllers
             _context.Order.Add(order);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetOrder", new { id = order.Id }, order);
+            return CreatedAtAction(nameof(GetOrderAsync), new { id = order.Id }, order);
         }
 
         private bool OrderExists(uint id)
