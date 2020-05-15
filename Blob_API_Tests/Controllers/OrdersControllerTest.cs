@@ -35,7 +35,7 @@ namespace Blob_API_Tests.Controllers
 
             SeedDatabase.SeedDatabaseWithDefaultData(_blobContext);
 
-            _ordersController = new OrdersController(_blobContext);
+            _ordersController = new OrdersController(_blobContext, null);
         }
 
         [Fact]
@@ -54,5 +54,7 @@ namespace Blob_API_Tests.Controllers
             Assert.Equal(newOrder.OrderedCustomerId, testee.OrderedCustomerId);
             Assert.Equal(newOrder.StateId, testee.StateId);
         }
+
+        // Test put: two ojects one with id one without, check if the changes of the first are reverted!
     }
 }

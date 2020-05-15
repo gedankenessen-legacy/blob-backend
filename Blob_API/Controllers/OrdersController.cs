@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blob_API.Model;
+using Microsoft.Extensions.Logging;
 
 namespace Blob_API.Controllers
 {
@@ -14,13 +15,15 @@ namespace Blob_API.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly BlobContext _context;
+        private readonly ILogger<OrdersController> _logger;
 
-        public OrdersController(BlobContext context)
+        public OrdersController(BlobContext context, ILogger<OrdersController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
-        // GET: api/Order
+        // GET: api/Orders
         [HttpGet]
         [ProducesResponseType(200)]
         public async Task<ActionResult<IEnumerable<Order>>> GetOrdersAsync()
@@ -28,8 +31,9 @@ namespace Blob_API.Controllers
             return Ok(await _context.Order.ToListAsync());
         }
 
-        // GET: api/Order/5
+        // GET: api/Orders/5
         [HttpGet("{id}")]
+        [ActionName(nameof(GetOrderAsync))]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
@@ -45,49 +49,72 @@ namespace Blob_API.Controllers
             return Ok(order);
         }
 
-        // PUT: api/Order/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutOrderAsync(uint id, [FromBody] Order order)
+        // PUT: api/Orders
+        [HttpPut]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> PutOrderAsync([FromBody] IEnumerable<Order> ordersToUpdate)
         {
             // TODO: check/validate/sanitize values.
 
-            if (id != order.Id)
+            foreach (var orderToUpdate in ordersToUpdate)
             {
-                return BadRequest();
-            }
+                if (!OrderExists(orderToUpdate.Id))
+                {
+                    return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                }
 
-            _context.Entry(order).State = EntityState.Modified;
+                // Update order and set state to Modified. 
+                _context.Entry(orderToUpdate).State = EntityState.Modified;
+            }
 
             try
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException e)
             {
-                if (!OrderExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                _logger.LogError("DbUpdateConcurrencyException", e);
+                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError("Exception", exp);
+                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
             }
 
             return NoContent();
         }
 
-        // POST: api/Order
+        // POST: api/Orders
         [HttpPost]
         [ProducesResponseType(201)]
-        public async Task<ActionResult<Order>> PostOrderAsync([FromBody] Order order)
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<Order>> PostOrderAsync(Order order)
         {
             // TODO: check/validate/sanitize values.
 
             _context.Order.Add(order);
-            await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetOrderAsync), new { id = order.Id }, order);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException e)
+            {
+                _logger.LogError("DbUpdateConcurrencyException", e);
+                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError("Exception", exp);
+                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+            }
+
+            var ret = CreatedAtAction(nameof(GetOrderAsync), new { id = order.Id }, order);
+
+            return ret;
         }
 
         private bool OrderExists(uint id)
