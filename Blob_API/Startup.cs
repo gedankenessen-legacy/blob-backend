@@ -24,6 +24,7 @@ namespace Blob_API
             // Datenbank Kontext anlegen
             services.AddDbContext<BlobContext>(opt =>
             {
+                opt.UseLazyLoadingProxies();
                 opt.UseMySql(Configuration.GetConnectionString("BlobContext"));
             });
 

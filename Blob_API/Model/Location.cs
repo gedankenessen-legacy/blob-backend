@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace Blob_API.Model
 {
+    [DataContract]
     public partial class Location
     {
         public Location()
@@ -10,8 +12,11 @@ namespace Blob_API.Model
             LocationProduct = new HashSet<LocationProduct>();
         }
 
+        [DataMember]
         public uint Id { get; set; }
+        [DataMember]
         public string Name { get; set; }
+        [DataMember]
         public uint AddressId { get; set; }
 
         public virtual Address Address { get; set; }
