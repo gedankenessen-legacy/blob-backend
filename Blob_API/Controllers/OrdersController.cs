@@ -112,9 +112,7 @@ namespace Blob_API.Controllers
                 return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
             }
 
-            var ret = CreatedAtAction(nameof(GetOrderAsync), new { id = order.Id }, order);
-
-            return ret;
+            return CreatedAtAction(nameof(GetOrderAsync), new { id = order.Id }, order);
         }
 
         private bool OrderExists(uint id)
