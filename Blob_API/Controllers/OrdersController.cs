@@ -76,9 +76,6 @@ namespace Blob_API.Controllers
                 {
                     if (!OrderExists(orderRessource.Id))
                     {
-                        // Iterate throught every entry that was modified and reload the values from the Database
-                        // await DatabaseHelper.RevertValues(orderRessourcesToUpdate, _context);
-
                         return NotFound("One or more objects did not exist in the Database, Id was not found.");
                     }
                 }
@@ -142,7 +139,6 @@ namespace Blob_API.Controllers
                 await _context.Order.AddAsync(newOrder);
                 await TryContextSaveAsync();
 
-
                 // Check if the customer already exists.
                 Customer customer = _context.Customer.Find(orderRessource.Customer.Id);
                 if (customer == null)
@@ -188,7 +184,8 @@ namespace Blob_API.Controllers
                     var orderedProductDTO = _mapper.Map<OrderedProduct>(orderedProduct);
 
                     // check if the product exists.
-                    if (_context.Product.Find(orderedProduct.Id) == null)
+                    Product product = _context.Product.Find(orderedProduct.Id);
+                    if (product == null)
                     {
                         return NotFound($"The ordered product with the ID={orderedProduct.Id} was not found.");
                     }
@@ -198,17 +195,27 @@ namespace Blob_API.Controllers
                     if ((orderedProductId = _context.OrderedProduct.Where(ordProd => ordProd == orderedProductDTO).First().Id) == 0)
                     {
                         // TODO: Check values, sanitize.
-                        await _context.OrderedProduct.AddAsync(orderedProductDTO);
+                        OrderedProduct ordProd = new OrderedProduct()
+                        {
+                            Name = product.Name,
+                            Price = product.Price,
+                            Sku = product.Sku,
+                            ProductId = product.Id
+                        };
+                        await _context.OrderedProduct.AddAsync(ordProd);
+                        await TryContextSaveAsync();
+
+                        orderedProductId = ordProd.Id;
                     }
 
 
                     // Add orderedProduct to OrderedProductOrder-Table if no entry exists.
-                    var ordProdOrd = _context.OrderedProductOrder.Find(orderedProductDTO.Id, newOrder.Id);
+                    var ordProdOrd = _context.OrderedProductOrder.Find(orderedProductId, newOrder.Id);
                     if (ordProdOrd.Quantity != orderedProduct.Quantity)
                     {
                         await _context.OrderedProductOrder.AddAsync(new OrderedProductOrder()
                         {
-                            OrderedProductId = orderedProductDTO.Id,
+                            OrderedProductId = orderedProductId,
                             OrderId = newOrder.Id,
                             Quantity = orderedProduct.Quantity
                         });
