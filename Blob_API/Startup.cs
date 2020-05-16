@@ -1,3 +1,4 @@
+using AutoMapper;
 using Blob_API.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -34,6 +35,9 @@ namespace Blob_API
                 {
                     opt.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
                 });
+
+            // Automapper wird dazu verwendent, um unsere DTO-Object zu einem Ressource-Objct zu mappen ohne uns selbst um die zuordnung der Properties zu kümmern.
+            services.AddAutoMapper(typeof(Startup));
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>

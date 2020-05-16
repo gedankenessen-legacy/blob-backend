@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Blob_API.Model;
 using Microsoft.Extensions.Logging;
 using Blob_API.Helpers;
+using AutoMapper;
+using Blob_API.RessourceModels;
 
 namespace Blob_API.Controllers
 {
@@ -17,19 +19,25 @@ namespace Blob_API.Controllers
     {
         private readonly BlobContext _context;
         private readonly ILogger<OrdersController> _logger;
+        private readonly IMapper _mapper;
 
-        public OrdersController(BlobContext context, ILogger<OrdersController> logger)
+        public OrdersController(BlobContext context, ILogger<OrdersController> logger, IMapper mapper)
         {
             _context = context;
             _logger = logger;
+            _mapper = mapper;
         }
 
         // GET: api/Orders
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<ActionResult<IEnumerable<Order>>> GetOrdersAsync()
+        public async Task<ActionResult<IEnumerable<OrderRessource>>> GetOrdersAsync()
         {
-            return Ok(await _context.Order.ToListAsync());
+            var orderList = await _context.Order.ToListAsync();
+
+            IEnumerable<OrderRessource> orderRessourceList = _mapper.Map<IEnumerable<OrderRessource>>(orderList);
+
+            return Ok(orderRessourceList);
         }
 
         // GET: api/Orders/5
@@ -85,7 +93,7 @@ namespace Blob_API.Controllers
             catch (Exception exp)
             {
                 _logger.LogError("Exception", exp);
-                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
+                return Problem("Could not save changes to Database", statusCode: 500, title: "Error");
             }
 
             return NoContent();
@@ -98,6 +106,8 @@ namespace Blob_API.Controllers
         public async Task<ActionResult<Order>> PostOrderAsync(Order order)
         {
             // TODO: check/validate/sanitize values.
+
+            // TODO: S19.4: Create backup of products
 
             _context.Order.Add(order);
 
@@ -113,7 +123,7 @@ namespace Blob_API.Controllers
             catch (Exception exp)
             {
                 _logger.LogError("Exception", exp);
-                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+                return Problem("Could not save to Database", statusCode: 500, title: "Error");
             }
 
             return CreatedAtAction(nameof(GetOrderAsync), new { id = order.Id }, order);

@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Blob_API.Controllers;
 using Blob_API.Model;
+using Blob_API.RessourceModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -33,9 +35,15 @@ namespace Blob_API_Tests.Controllers
             options = builder.Options;
             _blobContext = new BlobContext(options);
 
+            MapperConfiguration mockMapper = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile(new OrderProfile());
+            });
+            var mapper = mockMapper.CreateMapper();
+
             SeedDatabase.SeedDatabaseWithDefaultData(_blobContext);
 
-            _ordersController = new OrdersController(_blobContext, null);
+            _ordersController = new OrdersController(_blobContext, null, mapper);
         }
 
         [Fact]

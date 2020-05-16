@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Blob_API.Model
 {
@@ -23,7 +24,9 @@ namespace Blob_API.Model
         [DataMember]
         public uint ProductId { get; set; }
 
+        [JsonIgnore]
         public virtual Product Product { get; set; }
+        [JsonIgnore]
         public virtual ICollection<OrderedProductOrder> OrderedProductOrder { get; set; }
     }
 }
