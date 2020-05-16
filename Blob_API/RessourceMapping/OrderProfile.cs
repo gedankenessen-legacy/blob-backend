@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Linq;
+using AutoMapper;
 using Blob_API.Model;
 
 namespace Blob_API.RessourceModels
@@ -9,7 +10,8 @@ namespace Blob_API.RessourceModels
         {
             // Define the orgin and destination model for the mapping process.
             CreateMap<Order, OrderRessource>()
-                .ForMember(dest => dest.OrderedProducts, opt => opt.MapFrom(src => src.OrderedProductOrder));
+                // OrderedProductOrder.OrderedProduct auf OrderedProducts mappen.
+                .ForMember(dest => dest.OrderedProducts, opt => opt.MapFrom(src => src.OrderedProductOrder.Select(x => x.OrderedProduct).ToList()));
         }
     }
 }

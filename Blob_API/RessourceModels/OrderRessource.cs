@@ -9,9 +9,9 @@ namespace Blob_API.RessourceModels
         public OrderRessource() { }
 
         public uint Id { get; set; }
-        public DateTime? CreatedAt { get; set; }
-        public Customer Customer { get; set; } // TODO: CustomerRessource class
+        public CustomerRessource Customer { get; set; }
+        public ICollection<OrderedProductRessource> OrderedProducts { get; set; } // TODO: OrderedProductsRessource class
 
-        public ICollection<OrderedProduct> OrderedProducts { get; set; } // TODO: OrderedProductsRessource class
+        //public DateTime? CreatedAt { get; set; }
     }
 }
