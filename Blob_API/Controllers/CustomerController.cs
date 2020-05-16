@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using Blob_API.Model;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.CodeDom;
+using Blob_API.Model;
+using Microsoft.Extensions.Logging;
 
 namespace Blob_API.Controllers
 {
@@ -12,44 +15,33 @@ namespace Blob_API.Controllers
     public class CustomerController : ControllerBase
     {
         private readonly BlobContext _context;
+        private readonly ILogger<CustomerController> _logger;
 
-        public CustomerController(BlobContext context)
+        public CustomerController(BlobContext context, ILogger<CustomerController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
-        // GET api/order
+
+        // GET api/Customers
         [HttpGet]
         [ProducesResponseType(200)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetAllCustomersAsync()
+        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomersAsync()
         {
-            // ? .Include(...) includes the elements of other tables to this 'query-object'.
-            var customerList = await _context.Customer
-                                    .Include(customer => customer.Address)
-                                    .ToListAsync();
-
-            return Ok(customerList);
+            return Ok(await _context.Customer.ToListAsync());
         }
 
-        // GET api/order/5
+        // GET: api/Customers/5
         [HttpGet("{id}")]
-        [ProducesResponseType(200)]
+        [ActionName(nameof(GetCustomerAsync))]
+        [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
-        public async Task<ActionResult<Customer>> GetCustomersAsync(uint id)
+        public async Task<ActionResult<Order>> GetCustomerAsync(uint id)
         {
-            // TODO: check/validate/sanitize values.
-            if (id < 0)
-            {
-                return BadRequest();
-            }
-            var customer = await _context.Customer
-                                    .Include(customer => customer.Address)
-                                    .SingleAsync(customer => customer.Id == id);
-
-            
+            var customer = await _context.Customer.FindAsync(id);
 
             if (customer == null)
             {
@@ -59,23 +51,99 @@ namespace Blob_API.Controllers
             return Ok(customer);
         }
 
-        // POST api/order
-        [HttpPost]
-        [ProducesResponseType(201)]
+        // PUT: api/Customers
+        [HttpPut]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<IEnumerable<Order>>> CreateOrdersAsync([FromBody] Customer newCustomer)
+        public async Task<IActionResult> PutCustomerAsync([FromBody] IEnumerable<Customer> customersToUpdate)
         {
             // TODO: check/validate/sanitize values.
 
-            var valueTask = await _context.Customer.AddAsync(newCustomer);
 
-            await _context.SaveChangesAsync();
 
-            var newCreatedCustomer = await _context.Customer
-                                    .Include(customer => customer.Address)
-                                    .SingleAsync(customer => customer.Id == valueTask.Entity.Id);
+            foreach (var customerToUpdate in customersToUpdate)
+            {
+                if (customerToUpdate.Firstname == null) 
+                {
+                    return BadRequest("First name cannot be null.");
+                }
 
-            return Created($"api/customer/{newCreatedCustomer.Id}", newCreatedCustomer);
+                if (customerToUpdate.Lastname == null)
+                {
+                    return BadRequest("Last name cannot be null.");
+                }
+
+                if (!CustomerExists(customerToUpdate.Id))
+                {
+                    return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                }
+
+                // Update customer and set state to Modified. 
+                _context.Entry(customerToUpdate).State = EntityState.Modified;
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException e)
+            {
+                _logger.LogError("DbUpdateConcurrencyException", e);
+                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError("Exception", exp);
+                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
+            }
+
+            return NoContent();
+        }
+
+        // POST: api/Customers
+        [HttpPost]
+        [ProducesResponseType(201)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<Customer>> PostOrderAsync(Customer customer)
+        {
+            // TODO: check/validate/sanitize values.
+
+            if (customer.Firstname == null)
+            {
+                return BadRequest("First name cannot be null.");
+            }
+
+            if (customer.Lastname == null)
+            {
+                return BadRequest("Last name cannot be null.");
+            }
+
+            _context.Customer.Add(customer);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException e)
+            {
+                _logger.LogError("DbUpdateConcurrencyException", e);
+                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError("Exception", exp);
+                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+            }
+
+            return CreatedAtAction(nameof(GetCustomerAsync), new { id = customer.Id }, customer);
+        }
+
+
+        private bool CustomerExists(uint id)
+        {
+            return _context.Customer.Any(e => e.Id == id);
         }
     }
 }
