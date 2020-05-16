@@ -28,7 +28,7 @@ namespace Blob_API.Controllers
             _mapper = mapper;
         }
 
-        // GET: api/Orders
+        /// GET: api/Orders
         [HttpGet]
         [ProducesResponseType(200)]
         public async Task<ActionResult<IEnumerable<OrderRessource>>> GetOrdersAsync()
@@ -65,42 +65,64 @@ namespace Blob_API.Controllers
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> PutOrderAsync([FromBody] IEnumerable<OrderRessource> orderRessourcesToUpdate)
+        public async Task<IActionResult> PutOrderAsync([FromBody] IEnumerable<OrderRessource> orderRessources)
         {
-            var ordersToUpdate = _mapper.Map<IEnumerable<Order>>(orderRessourcesToUpdate);
-
-            // TODO: check/validate/sanitize values.
-
-            foreach (var orderToUpdate in ordersToUpdate)
+            using (var transaction = _context.Database.BeginTransaction())
             {
-                if (!OrderExists(orderToUpdate.Id))
-                {
-                    // Iterate throught every entry that was modified and reload the values from the Database
-                    await DatabaseHelper.RevertValues(ordersToUpdate, _context);
+                // TODO: check/validate/sanitize values.
 
-                    return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                // Check if the order is in the database.
+                foreach (var orderRessource in orderRessources)
+                {
+                    if (!OrderExists(orderRessource.Id))
+                    {
+                        // Iterate throught every entry that was modified and reload the values from the Database
+                        // await DatabaseHelper.RevertValues(orderRessourcesToUpdate, _context);
+
+                        return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                    }
                 }
 
-                // Update order and set state to Modified. 
-                _context.Entry(orderToUpdate).State = EntityState.Modified;
-            }
+                // Update entries
+                foreach (var orderRessource in orderRessources)
+                {
+                    var entry = _context.Order.Find(orderRessource.Id);
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException e)
-            {
-                _logger.LogError("DbUpdateConcurrencyException", e);
-                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
-            }
-            catch (Exception exp)
-            {
-                _logger.LogError("Exception", exp);
-                return Problem("Could not save changes to Database", statusCode: 500, title: "Error");
-            }
+                    var newCustomer = _mapper.Map<Customer>(orderRessource.Customer);
+                    // Make sure the id still the same.
+                    newCustomer.Id = entry.Customer.Id;
+                    entry.Customer = newCustomer;
 
-            return NoContent();
+                    foreach (var orderedProduct in orderRessource.OrderedProducts)
+                    {
+                        // Check if product is already in OrderedProductOrder table.
+                        OrderedProductOrder orderedProductOrder = _context.OrderedProductOrder.Find(orderedProduct.Id, orderRessource.Id);
+
+                        // TODO: PUT creates the ressource if not found. Consider Idempotency.
+                        if (orderedProductOrder == null)
+                        {
+                            return NotFound($"The ordered product with the ID={orderedProduct.Id} was not found.");
+                        }
+
+                        // Update values
+                        var newOrderedProduct = _mapper.Map<OrderedProduct>(orderedProduct);
+
+                        // Make sure the id still the same.
+                        newOrderedProduct.Id = orderedProductOrder.OrderedProduct.Id;
+
+                        orderedProductOrder.OrderedProduct = newOrderedProduct;
+                        orderedProductOrder.Quantity = orderedProduct.Quantity;
+                    }
+
+                    // Update order and set state to Modified. 
+                    _context.Entry(entry).State = EntityState.Modified;
+                }
+
+                await TryContextSaveAsync();
+                await transaction.CommitAsync();
+
+                return NoContent();
+            }
         }
 
         // POST: api/Orders
@@ -109,14 +131,104 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<OrderRessource>> PostOrderAsync(OrderRessource orderRessource)
         {
-            var order = _mapper.Map<Order>(orderRessource);
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                Order newOrder = new Order
+                {
+                    CreatedAt = new DateTime().ToUniversalTime()
+                };
 
-            // TODO: check/validate/sanitize values.
+                // Save inorder to set the id to the entry.
+                await _context.Order.AddAsync(newOrder);
+                await TryContextSaveAsync();
 
-            // TODO: S19.4: Create backup of products
 
-            _context.Order.Add(order);
+                // Check if the customer already exists.
+                Customer customer = _context.Customer.Find(orderRessource.Customer.Id);
+                if (customer == null)
+                {
+                    BadRequest("The customer does not exist.");
+                }
 
+                // Check if the address already exists.
+                Address address = _context.Address.Find(orderRessource.Customer.Address.Id);
+                if (customer == null)
+                {
+                    BadRequest("The Address does not exist.");
+                }
+
+                // Create "ghost/copy/backup"-Address
+                OrderedAddress newOrderedAddress = new OrderedAddress()
+                {
+                    Street = address.Street,
+                    Zip = address.Zip,
+                    City = address.City
+                };
+
+                await _context.OrderedAddress.AddAsync(newOrderedAddress);
+                await TryContextSaveAsync();
+
+                // Create "ghost/copy/backup"-Customer
+                OrderedCustomer newOrderedCustomer = new OrderedCustomer()
+                {
+                    Firstname = customer.Firstname,
+                    Lastname = customer.Lastname,
+                    OrderedAddressId = newOrderedAddress.Id
+                };
+                await _context.OrderedCustomer.AddAsync(newOrderedCustomer);
+                await TryContextSaveAsync();
+
+                newOrder.OrderedCustomerId = newOrderedCustomer.Id;
+                newOrder.CustomerId = orderRessource.Customer.Id;
+                newOrder.State.Id = _context.State.First().Id;
+
+                // TODO: S19.4: Create backup of products
+                foreach (var orderedProduct in orderRessource.OrderedProducts)
+                {
+                    var orderedProductDTO = _mapper.Map<OrderedProduct>(orderedProduct);
+
+                    // check if the product exists.
+                    if (_context.Product.Find(orderedProduct.Id) == null)
+                    {
+                        return NotFound($"The ordered product with the ID={orderedProduct.Id} was not found.");
+                    }
+
+                    // Add "ghost/copy/backup"-Product if no entry exists.
+                    uint orderedProductId = 0;
+                    if ((orderedProductId = _context.OrderedProduct.Where(ordProd => ordProd == orderedProductDTO).First().Id) == 0)
+                    {
+                        // TODO: Check values, sanitize.
+                        await _context.OrderedProduct.AddAsync(orderedProductDTO);
+                    }
+
+
+                    // Add orderedProduct to OrderedProductOrder-Table if no entry exists.
+                    var ordProdOrd = _context.OrderedProductOrder.Find(orderedProductDTO.Id, newOrder.Id);
+                    if (ordProdOrd.Quantity != orderedProduct.Quantity)
+                    {
+                        await _context.OrderedProductOrder.AddAsync(new OrderedProductOrder()
+                        {
+                            OrderedProductId = orderedProductDTO.Id,
+                            OrderId = newOrder.Id,
+                            Quantity = orderedProduct.Quantity
+                        });
+                    }
+                }
+
+                await TryContextSaveAsync();
+
+                await transaction.CommitAsync();
+                return CreatedAtAction(nameof(GetOrderAsync), new { id = newOrder.Id }, newOrder);
+            }
+        }
+
+        private bool OrderExists(uint id)
+        {
+            return _context.Order.Any(e => e.Id == id);
+        }
+
+        private async Task<ActionResult> TryContextSaveAsync()
+        {
             try
             {
                 await _context.SaveChangesAsync();
@@ -132,12 +244,7 @@ namespace Blob_API.Controllers
                 return Problem("Could not save to Database", statusCode: 500, title: "Error");
             }
 
-            return CreatedAtAction(nameof(GetOrderAsync), new { id = order.Id }, order);
-        }
-
-        private bool OrderExists(uint id)
-        {
-            return _context.Order.Any(e => e.Id == id);
+            return StatusCode(500);
         }
     }
 }

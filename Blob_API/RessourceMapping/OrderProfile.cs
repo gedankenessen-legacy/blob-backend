@@ -13,6 +13,7 @@ namespace Blob_API.RessourceModels
                 // OrderedProductOrder.OrderedProduct auf OrderedProducts mappen.
                 .ForMember(dest => dest.OrderedProducts, opt => opt.MapFrom(src => src.OrderedProductOrder.Select(x => x.OrderedProduct).ToList()))
                 .ReverseMap();
+                    
         }
     }
 }

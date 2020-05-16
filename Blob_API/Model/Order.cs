@@ -23,9 +23,10 @@ namespace Blob_API.Model
         public uint OrderedCustomerId { get; set; }
         [DataMember]
         public uint StateId { get; set; }
-        [DataMember]
-        public virtual ICollection<OrderedProductOrder> OrderedProductOrder { get; set; }
 
+
+        [JsonIgnore]
+        public virtual ICollection<OrderedProductOrder> OrderedProductOrder { get; set; }
         [JsonIgnore]
         public virtual Customer Customer { get; set; }
         [JsonIgnore]

@@ -1,9 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
 namespace Blob_API.Helpers
 {
+    [Obsolete]
     static public class DatabaseHelper
     {
         /// <summary>
@@ -12,6 +14,7 @@ namespace Blob_API.Helpers
         /// <param name="entitiesToRevert">List of entities which will be checked and reverted if not unchanged</param>
         /// <param name="_context">The database context</param>
         /// <returns>Task</returns>
+        [Obsolete]
         public static async Task RevertValues(IEnumerable entitiesToRevert, DbContext _context)
         {
             foreach (var entityToRevert in entitiesToRevert)
