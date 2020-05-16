@@ -20,10 +20,13 @@ namespace Blob_API.Model
         public string Sku { get; set; }
         public DateTime? CreatedAt { get; set; }
 
+        [JsonIgnore]
         public virtual ICollection<CategoryProduct> CategoryProduct { get; set; }
+        [JsonIgnore]
         public virtual ICollection<LocationProduct> LocationProduct { get; set; }
         [JsonIgnore]
         public virtual ICollection<OrderedProduct> OrderedProduct { get; set; }
+        [JsonIgnore]
         public virtual ICollection<ProductProperty> ProductProperty { get; set; }
     }
 }

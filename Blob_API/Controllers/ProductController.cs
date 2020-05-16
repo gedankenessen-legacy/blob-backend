@@ -6,6 +6,7 @@ using Blob_API.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Blob_API.Controllers
 {
@@ -14,115 +15,154 @@ namespace Blob_API.Controllers
     public class ProductController : ControllerBase
     {
         private readonly BlobContext _context;
+        private readonly ILogger<ProductController> _logger;
 
-        public ProductController(BlobContext context)
+        public ProductController(BlobContext context, ILogger<ProductController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet]
         [ProducesResponseType(200)]
-        [ProducesResponseType(500)]
         public async Task<ActionResult<IEnumerable<Product>>> GetAllProducts()
         {
-            var productList = await _context.Product
-                .Include(product => product.CategoryProduct)
-                    .ThenInclude(CategoryProduct => CategoryProduct.Category)
-                .Include(product => product.LocationProduct)
-                    .ThenInclude(LocationProduct => LocationProduct.Location)
-                .Include(product => product.ProductProperty)
-                    .ThenInclude(ProductProperty => ProductProperty.Property)
-                .ToListAsync();
-
-            return Ok(productList);
+            return Ok(await _context.Product.ToListAsync());
         }
 
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        public async Task<ActionResult<Product>> GetProduct(uint id)
         {
-            if (id < 0)
-            {
-                return BadRequest();
-            }
-
-            var product = await _context.Product
-                .Include(product => product.CategoryProduct)
-                    .ThenInclude(CategoryProduct => CategoryProduct.Category)
-                .Include(product => product.LocationProduct)
-                    .ThenInclude(LocationProduct => LocationProduct.Location)
-                .Include(product => product.ProductProperty)
-                    .ThenInclude(ProductProperty => ProductProperty.Property)
-                .SingleAsync(product => product.Id == id);
-
+            var product = await _context.Product.FindAsync(id);
 
             if (product == null)
             {
-                return NotFound();
+                return NotFound("One or more objects did not exist in the Database, Id was not found.");
             }
 
             return Ok(product);
         }
 
         [HttpPut]
-        
-        public async Task<ActionResult<IEnumerable<Product>>> UpdateProducts( IEnumerable<Product> products)
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> PutProductAsync([FromBody] IEnumerable<Product> productsToUpdate)
         {
-            //TODO Implementierung der Methode
-            var test = _context.Product;
-            return null;
+            // TODO: check/validate/sanitize values.
+
+            foreach (var productToUpdate in productsToUpdate)
+            {
+                if (productToUpdate.Name == null)
+                {
+                    return Problem("The Products Name can not be null", statusCode: 404, title: "User Error");
+                }
+
+                if (productToUpdate.Price < 0)
+                {
+                    return Problem("The Products Price can not be under 0", statusCode: 404, title: "User Error");
+                }
+
+                if (!ProductExists(productToUpdate.Id))
+                {
+                    return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                }
+
+                // Update product and set state to Modified. 
+                _context.Entry(productToUpdate).State = EntityState.Modified;
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException e)
+            {
+                _logger.LogError("DbUpdateConcurrencyException", e);
+                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError("Exception", exp);
+                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
+            }
+
+            return NoContent();
         }
 
         [HttpPost]
         [ProducesResponseType(201)]
-        [ProducesResponseType(400)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<IEnumerable<Product>>> CreateProduct([FromBody] Product newProduct)
+        public async Task<ActionResult<Product>> PostProductAsync(Product product)
         {
-            if (newProduct.Sku == null)
+            
+            if (product.Name == null)
             {
-                return BadRequest();
+                return Problem("The Products Name can not be null", statusCode: 404, title: "User Error");
             }
 
-            if (newProduct.CreatedAt == null)
+            if (product.Price < 0)
             {
-                return BadRequest();
+                return Problem("The Products Price can not be under 0", statusCode: 404, title: "User Error");
             }
 
-            var valueTask = await _context.Product.AddAsync(newProduct);
+            _context.Product.Add(product);
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException e)
+            {
+                _logger.LogError("DbUpdateConcurrencyException", e);
+                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError("Exception", exp);
+                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+            }
 
-            var newCreatedProduct = await _context.Product
-                .Include(product => product.CategoryProduct)
-                    .ThenInclude(CategoryProduct => CategoryProduct.Category)
-                .Include(product => product.LocationProduct)
-                    .ThenInclude(LocationProduct => LocationProduct.Location)
-                .Include(product => product.ProductProperty)
-                    .ThenInclude(ProductProperty => ProductProperty.Property)
-                .SingleAsync(product => product.Id == valueTask.Entity.Id);
-
-            return Created($"api/product/{newCreatedProduct.Id}", newCreatedProduct);
+            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }
 
         [HttpDelete("{id}")]
-        public void DeleteProduct(int id)
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> DeleteProduct(uint id)
         {
-            var res = _context.Product.Find(id);
 
-            if (res != null)
+            if (!ProductExists(id))
             {
-                _context.Product.Remove(res);
-                _context.SaveChanges();
+                return NotFound("One or more objects did not exist in the Database, Id was not found.");
             }
-            else
+
+            _context.Product.Remove(_context.Product.Find(id));
+
+            try
             {
-                //TODO Eine Fehler Meldung Hinzufügen  
+                await _context.SaveChangesAsync();
             }
+            catch (DbUpdateConcurrencyException e)
+            {
+                _logger.LogError("DbUpdateConcurrencyException", e);
+                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError("Exception", exp);
+                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+            }
+
+            return NoContent();
         }
 
+        private bool ProductExists(uint id)
+        {
+            return _context.Product.Any(e => e.Id == id);
+        }
     }
 }
