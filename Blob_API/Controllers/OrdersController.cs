@@ -62,6 +62,13 @@ namespace Blob_API.Controllers
             {
                 if (!OrderExists(orderToUpdate.Id))
                 {
+                    foreach (var orderToRevert in ordersToUpdate)
+                    {
+                        // Revert changes, reload data from db
+                        if (_context.Entry(orderToRevert).State != EntityState.Unchanged) 
+                            await _context.Entry(orderToRevert).ReloadAsync();
+                    }
+
                     return NotFound("One or more objects did not exist in the Database, Id was not found.");
                 }
 

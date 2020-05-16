@@ -55,6 +55,41 @@ namespace Blob_API_Tests.Controllers
             Assert.Equal(newOrder.StateId, testee.StateId);
         }
 
-        // Test put: two ojects one with id one without, check if the changes of the first are reverted!
+        // Test PUT: two ojects one with id one without, check if the changes of the first are reverted!
+        [Fact]
+        public async Task InsertTwoButOnlyOneHasAId()
+        {
+            // Arrange = Setup
+            List<Order> orders = new List<Order>();
+
+            orders.Add(new Order()
+            {
+                Id = 1,
+                CreatedAt = DateTime.Parse("2020-05-12 21:32:43"),
+                CustomerId = 1,
+                OrderedCustomerId = 1,
+                StateId = 3 // 2->3
+            });
+
+            orders.Add(
+            new Order()
+            {
+                Id = 0, // 2->0
+                CreatedAt = DateTime.Parse("2020-05-12 23:56:08"),
+                CustomerId = 1,
+                OrderedCustomerId = 1,
+                StateId = 4 // 1->4
+            });
+
+
+            // Act = Processing
+            var task = await _ordersController.PutOrderAsync(orders);
+
+            // Assert
+            Assert.Equal((uint)2, _blobContext.Order.Find((uint)1).StateId);
+            Assert.NotEqual((uint)3, _blobContext.Order.Find((uint)1).StateId);
+            Assert.Equal((uint)1, _blobContext.Order.Find((uint)2).StateId);
+            Assert.NotEqual((uint)4, _blobContext.Order.Find((uint)2).StateId);
+        }
     }
 }
