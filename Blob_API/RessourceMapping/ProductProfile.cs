@@ -14,11 +14,9 @@ namespace Blob_API.RessourceMapping
             CreateMap<Product, ProductRessource>()
                 // ProductProperty.Property auf Properties mappen.
                 .ForMember(dest => dest.Properties, opt => opt.MapFrom(src => src.ProductProperty.Select(x => x.Property).ToList()))
-                // CategoryProduct.Category auf Categories mappen.
-                .ForMember(dest => dest.Categories, opt => opt.MapFrom(src => src.CategoryProduct.Select(x => x.Category).ToList()));
-                // LocationProduct auf locationProducts mappen.
-                // TODO: LocationProductRessource class
-                //.ForMember(dest => dest.locationProducts, opt => opt.MapFrom(src => src.LocationProduct));
+                .ForMember(dest => dest.Categories, opt => opt.MapFrom(src => src.CategoryProduct.Select(x => x.Category).ToList()))
+                .ReverseMap();
+
         }
     }
 }

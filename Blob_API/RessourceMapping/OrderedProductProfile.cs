@@ -17,7 +17,8 @@ namespace Blob_API.RessourceMapping
                 opt => opt.MapFrom(
                     src => src.OrderedProductOrder
                         .Where(orderedProductOrder => orderedProductOrder.OrderedProductId == src.Id)
-                        .Select(x => x.Quantity).First()));
+                        .Select(x => x.Quantity).First()))
+                .ReverseMap();
         }
     }
 }

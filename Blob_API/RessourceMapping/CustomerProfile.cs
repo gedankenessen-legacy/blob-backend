@@ -10,7 +10,8 @@ namespace Blob_API.RessourceMapping
         public CustomerProfile()
         {
             // Define the orgin and destination model for the mapping process.
-            CreateMap<Customer, CustomerRessource>();
+            CreateMap<Customer, CustomerRessource>()
+                .ReverseMap();
         }
     }
 }

@@ -46,7 +46,7 @@ namespace Blob_API.Controllers
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<Order>> GetOrderAsync(uint id)
+        public async Task<ActionResult<OrderRessource>> GetOrderAsync(uint id)
         {
             var order = await _context.Order.FindAsync(id);
 
@@ -55,7 +55,9 @@ namespace Blob_API.Controllers
                 return NotFound();
             }
 
-            return Ok(order);
+            var orderRessource = _mapper.Map<OrderRessource>(order);
+
+            return Ok(orderRessource);
         }
 
         // PUT: api/Orders
@@ -63,8 +65,10 @@ namespace Blob_API.Controllers
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> PutOrderAsync([FromBody] IEnumerable<Order> ordersToUpdate)
+        public async Task<IActionResult> PutOrderAsync([FromBody] IEnumerable<OrderRessource> orderRessourcesToUpdate)
         {
+            var ordersToUpdate = _mapper.Map<IEnumerable<Order>>(orderRessourcesToUpdate);
+
             // TODO: check/validate/sanitize values.
 
             foreach (var orderToUpdate in ordersToUpdate)
@@ -103,8 +107,10 @@ namespace Blob_API.Controllers
         [HttpPost]
         [ProducesResponseType(201)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<Order>> PostOrderAsync(Order order)
+        public async Task<ActionResult<OrderRessource>> PostOrderAsync(OrderRessource orderRessource)
         {
+            var order = _mapper.Map<Order>(orderRessource);
+
             // TODO: check/validate/sanitize values.
 
             // TODO: S19.4: Create backup of products
