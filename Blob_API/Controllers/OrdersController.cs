@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blob_API.Model;
 using Microsoft.Extensions.Logging;
+using Blob_API.Helpers;
 
 namespace Blob_API.Controllers
 {
@@ -62,12 +63,8 @@ namespace Blob_API.Controllers
             {
                 if (!OrderExists(orderToUpdate.Id))
                 {
-                    foreach (var orderToRevert in ordersToUpdate)
-                    {
-                        // Revert changes, reload data from db
-                        if (_context.Entry(orderToRevert).State != EntityState.Unchanged) 
-                            await _context.Entry(orderToRevert).ReloadAsync();
-                    }
+                    // Iterate throught every entry that was modified and reload the values from the Database
+                    await DatabaseHelper.RevertValues(ordersToUpdate, _context);
 
                     return NotFound("One or more objects did not exist in the Database, Id was not found.");
                 }
