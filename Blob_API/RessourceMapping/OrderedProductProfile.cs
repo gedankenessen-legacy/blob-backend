@@ -12,13 +12,19 @@ namespace Blob_API.RessourceMapping
         {
             // Define the orgin and destination model for the mapping process.
             CreateMap<OrderedProduct, OrderedProductRessource>()
-                .ForMember(
-                dest => dest.Quantity,
-                opt => opt.MapFrom(
-                    src => src.OrderedProductOrder
-                        .Where(orderedProductOrder => orderedProductOrder.OrderedProductId == src.Id)
-                        .Select(x => x.Quantity).First()))
+                //.ForMember(
+                //dest => dest.Quantity,
+                //opt => opt.MapFrom(
+                //    src => src.OrderedProductOrder
+                //        .Where(orderedProductOrder => orderedProductOrder.OrderedProductId == src.Id)
                 .ReverseMap();
         }
     }
 }
+
+/*
+
+
+    .Where(orderedProductOrder => orderedProductOrder.OrderedProductId == src.Id && orderedProductOrder.OrderedProduct == src)
+                        .Select(x => x.Quantity).First()))
+     */

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Blob_API.Model
 {
@@ -20,6 +21,7 @@ namespace Blob_API.Model
         public uint AddressId { get; set; }
 
         public virtual Address Address { get; set; }
+        [JsonIgnore]
         public virtual ICollection<LocationProduct> LocationProduct { get; set; }
     }
 }

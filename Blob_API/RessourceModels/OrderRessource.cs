@@ -9,7 +9,9 @@ namespace Blob_API.RessourceModels
         public OrderRessource() { }
 
         public uint Id { get; set; }
+        public uint LocationId { get; set; }
         public CustomerRessource Customer { get; set; }
         public ICollection<OrderedProductRessource> OrderedProducts { get; set; }
+        public State State { get; set; }
     }
 }

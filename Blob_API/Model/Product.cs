@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Blob_API.Model
 {
@@ -26,9 +27,13 @@ namespace Blob_API.Model
         [DataMember]
         public DateTime? CreatedAt { get; set; }
 
+        [JsonIgnore]
         public virtual ICollection<CategoryProduct> CategoryProduct { get; set; }
+        [JsonIgnore]
         public virtual ICollection<LocationProduct> LocationProduct { get; set; }
+        [JsonIgnore]
         public virtual ICollection<OrderedProduct> OrderedProduct { get; set; }
+        [JsonIgnore]
         public virtual ICollection<ProductProperty> ProductProperty { get; set; }
     }
 }

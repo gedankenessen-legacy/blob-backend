@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blob_API.Model;
 using Microsoft.Extensions.Logging;
-using Blob_API.Helpers;
 using AutoMapper;
 using Blob_API.RessourceModels;
 
@@ -37,6 +35,8 @@ namespace Blob_API.Controllers
 
             IEnumerable<OrderRessource> orderRessourceList = _mapper.Map<IEnumerable<OrderRessource>>(orderList);
 
+            await AddQuantityToOrder(orderRessourceList);
+
             return Ok(orderRessourceList);
         }
 
@@ -57,6 +57,8 @@ namespace Blob_API.Controllers
 
             var orderRessource = _mapper.Map<OrderRessource>(order);
 
+            await AddQuantityToOrder(Enumerable.Repeat(orderRessource, 1));
+
             return Ok(orderRessource);
         }
 
@@ -69,50 +71,57 @@ namespace Blob_API.Controllers
         {
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                // TODO: check/validate/sanitize values.
-
-                // Check if the order is in the database.
+                // Update entries
                 foreach (var orderRessource in orderRessources)
                 {
                     if (!OrderExists(orderRessource.Id))
                     {
                         return NotFound("One or more objects did not exist in the Database, Id was not found.");
                     }
-                }
 
-                // Update entries
-                foreach (var orderRessource in orderRessources)
-                {
-                    var entry = _context.Order.Find(orderRessource.Id);
+                    if (orderRessource.LocationId <= 0)
+                    {
+                        return BadRequest("No location id provided!");
+                    }
 
-                    var newCustomer = _mapper.Map<Customer>(orderRessource.Customer);
-                    // Make sure the id still the same.
-                    newCustomer.Id = entry.Customer.Id;
-                    entry.Customer = newCustomer;
+                    var orderToUpdate = _context.Order.Find(orderRessource.Id);
 
                     foreach (var orderedProduct in orderRessource.OrderedProducts)
                     {
                         // Check if product is already in OrderedProductOrder table.
-                        OrderedProductOrder orderedProductOrder = _context.OrderedProductOrder.Find(orderedProduct.Id, orderRessource.Id);
+                        OrderedProductOrder ordProdOrd = _context.OrderedProductOrder.Find(orderedProduct.Id, orderRessource.Id);
 
-                        // TODO: PUT creates the ressource if not found. Consider Idempotency.
-                        if (orderedProductOrder == null)
+                        // If not create it.
+                        if (ordProdOrd == null)
                         {
-                            return NotFound($"The ordered product with the ID={orderedProduct.Id} was not found.");
+                            ordProdOrd = new OrderedProductOrder()
+                            {
+                                OrderedProduct = _context.OrderedProduct.Find(orderedProduct.Id),//_mapper.Map<OrderedProduct>(orderedProduct),
+                                Order = orderToUpdate,
+                                Quantity = orderedProduct.Quantity,
+                            };
+                            await _context.OrderedProductOrder.AddAsync(ordProdOrd);
+                        }
+                        else if (ordProdOrd.Quantity != orderedProduct.Quantity)
+                        {
+                            ordProdOrd.Quantity = orderedProduct.Quantity;
                         }
 
                         // Update values
-                        var newOrderedProduct = _mapper.Map<OrderedProduct>(orderedProduct);
+                        //var newOrderedProduct = _context.OrderedProduct.Find(orderedProduct.Id);//_mapper.Map<OrderedProduct>(orderedProduct);
 
-                        // Make sure the id still the same.
-                        newOrderedProduct.Id = orderedProductOrder.OrderedProduct.Id;
+                        //// Make sure the id still the same.
+                        //newOrderedProduct.Id = ordProdOrd.OrderedProduct.Id;
 
-                        orderedProductOrder.OrderedProduct = newOrderedProduct;
-                        orderedProductOrder.Quantity = orderedProduct.Quantity;
+                        //ordProdOrd.OrderedProduct = newOrderedProduct;
+                        //ordProdOrd.Quantity = orderedProduct.Quantity;
+
+                        // TODO: Reduce stock, but idepotent!
+                        //await ReduceStockAsync(ordProdOrd.Quantity, orderRessource.LocationId, newOrderedProduct.Product.Id);
                     }
 
                     // Update order and set state to Modified. 
-                    _context.Entry(entry).State = EntityState.Modified;
+                    //_context.Entry(orderToUpdate).State = EntityState.Modified;
                 }
 
                 await TryContextSaveAsync();
@@ -238,6 +247,46 @@ namespace Blob_API.Controllers
         {
             return _context.Order.Any(e => e.Id == id);
         }
+
+        /// <summary>
+        /// Iterates through all ordered product and sums up the quantity for each.
+        /// </summary>
+        /// <param name="orderRessourceList">A list of Orders</param>
+        /// <returns>Awaitable Task</returns>
+        private async Task AddQuantityToOrder(IEnumerable<OrderRessource> orderRessourceList)
+        {
+            // get orderedProduct quantity
+            foreach (var orderRessource in orderRessourceList)
+            {
+                foreach (var orderedProduct in orderRessource.OrderedProducts)
+                {
+                    var ordProdOrd = await _context.OrderedProductOrder.FindAsync(orderedProduct.Id, orderRessource.Id);
+                    if (ordProdOrd != null)
+                        orderedProduct.Quantity = ordProdOrd.Quantity;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reduces the stock of an item by the given quantity.
+        /// </summary>
+        /// <param name="quantity">The amount to reduce the stock.</param>
+        /// <param name="locationId">The id of the location.</param>
+        /// <param name="productId">The id of the product.</param>
+        /// <returns>true if successful, and false with an error message if not. </returns>
+        private async Task<(bool, string)> ReduceStockAsync(uint quantity, uint locationId, uint productId)
+        {
+            var locationProduct = await _context.LocationProduct.FindAsync(locationId, productId);
+
+            if (locationProduct.Quantity >= quantity)
+            {
+                locationProduct.Quantity -= quantity;
+                return (true, "");
+            }
+            else
+                return (false, "Not enough items in stock.");
+        }
+
 
         private async Task<ActionResult> TryContextSaveAsync()
         {

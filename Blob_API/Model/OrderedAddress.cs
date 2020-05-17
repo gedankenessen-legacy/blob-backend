@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Blob_API.Model
 {
@@ -21,6 +22,7 @@ namespace Blob_API.Model
         [DataMember]
         public string City { get; set; }
 
+        [JsonIgnore]
         public virtual ICollection<OrderedCustomer> OrderedCustomer { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Blob_API.Model
 {
@@ -12,7 +13,9 @@ namespace Blob_API.Model
         [DataMember]
         public uint PropertyId { get; set; }
 
+        [JsonIgnore]
         public virtual Product Product { get; set; }
+        [JsonIgnore]
         public virtual Property Property { get; set; }
     }
 }
