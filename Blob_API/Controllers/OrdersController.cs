@@ -67,7 +67,7 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<IActionResult> PutOrderAsync([FromBody] IEnumerable<OrderRessource> orderRessources)
         {
-            using (var transaction = _context.Database.BeginTransaction())
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 // TODO: check/validate/sanitize values.
 
@@ -128,17 +128,8 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<OrderRessource>> PostOrderAsync(OrderRessource orderRessource)
         {
-            using (var transaction = _context.Database.BeginTransaction())
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                Order newOrder = new Order
-                {
-                    CreatedAt = new DateTime().ToUniversalTime()
-                };
-
-                // Save inorder to set the id to the entry.
-                await _context.Order.AddAsync(newOrder);
-                await TryContextSaveAsync();
-
                 // Check if the customer already exists.
                 Customer customer = _context.Customer.Find(orderRessource.Customer.Id);
                 if (customer == null)
@@ -148,10 +139,18 @@ namespace Blob_API.Controllers
 
                 // Check if the address already exists.
                 Address address = _context.Address.Find(orderRessource.Customer.Address.Id);
-                if (customer == null)
+                if (address == null)
                 {
                     BadRequest("The Address does not exist.");
                 }
+
+                Order newOrder = new Order
+                {
+                    CreatedAt = DateTime.Now.ToUniversalTime(),
+                    Customer = customer
+                };
+
+                await _context.Order.AddAsync(newOrder);
 
                 // Create "ghost/copy/backup"-Address
                 OrderedAddress newOrderedAddress = new OrderedAddress()
@@ -162,25 +161,28 @@ namespace Blob_API.Controllers
                 };
 
                 await _context.OrderedAddress.AddAsync(newOrderedAddress);
-                await TryContextSaveAsync();
+                //await TryContextSaveAsync();
 
                 // Create "ghost/copy/backup"-Customer
                 OrderedCustomer newOrderedCustomer = new OrderedCustomer()
                 {
                     Firstname = customer.Firstname,
                     Lastname = customer.Lastname,
-                    OrderedAddressId = newOrderedAddress.Id
+                    OrderedAddress = newOrderedAddress
                 };
                 await _context.OrderedCustomer.AddAsync(newOrderedCustomer);
-                await TryContextSaveAsync();
+                //await TryContextSaveAsync();
 
-                newOrder.OrderedCustomerId = newOrderedCustomer.Id;
-                newOrder.CustomerId = orderRessource.Customer.Id;
-                newOrder.State.Id = _context.State.First().Id;
+                newOrder.OrderedCustomer = newOrderedCustomer;
+                newOrder.State = _context.State.First();
+
 
                 // TODO: S19.4: Create backup of products
-                foreach (var orderedProduct in orderRessource.OrderedProducts)
+                OrderedProductRessource[] array = orderRessource.OrderedProducts.ToArray();
+
+                for (int i = 0; i < array.Length; i++)
                 {
+                    OrderedProductRessource orderedProduct = array[i];
                     var orderedProductDTO = _mapper.Map<OrderedProduct>(orderedProduct);
 
                     // check if the product exists.
@@ -192,33 +194,36 @@ namespace Blob_API.Controllers
 
                     // Add "ghost/copy/backup"-Product if no entry exists.
                     uint orderedProductId = 0;
+                    OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd == orderedProductDTO).First();
                     if ((orderedProductId = _context.OrderedProduct.Where(ordProd => ordProd == orderedProductDTO).First().Id) == 0)
                     {
                         // TODO: Check values, sanitize.
-                        OrderedProduct ordProd = new OrderedProduct()
+                        ordProd = new OrderedProduct()
                         {
                             Name = product.Name,
                             Price = product.Price,
                             Sku = product.Sku,
-                            ProductId = product.Id
+                            Product = product
                         };
                         await _context.OrderedProduct.AddAsync(ordProd);
-                        await TryContextSaveAsync();
+                        //await TryContextSaveAsync();
 
-                        orderedProductId = ordProd.Id;
+                        orderedProductDTO = ordProd;
                     }
 
 
                     // Add orderedProduct to OrderedProductOrder-Table if no entry exists.
-                    var ordProdOrd = _context.OrderedProductOrder.Find(orderedProductId, newOrder.Id);
-                    if (ordProdOrd.Quantity != orderedProduct.Quantity)
+                    // BUG: id is always 0
+                    var ordProdOrd = _context.OrderedProductOrder.Find(ordProd.Id, newOrder.Id);
+                    if (ordProdOrd == null || ordProdOrd.Quantity != orderedProduct.Quantity)
                     {
-                        await _context.OrderedProductOrder.AddAsync(new OrderedProductOrder()
+                        OrderedProductOrder opo = new OrderedProductOrder()
                         {
-                            OrderedProductId = orderedProductId,
-                            OrderId = newOrder.Id,
+                            OrderedProduct = ordProd,
+                            Order = newOrder,
                             Quantity = orderedProduct.Quantity
-                        });
+                        };
+                        await _context.OrderedProductOrder.AddAsync(opo);
                     }
                 }
 
