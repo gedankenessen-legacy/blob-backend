@@ -96,7 +96,7 @@ namespace Blob_API.Controllers
                         {
                             ordProdOrd = new OrderedProductOrder()
                             {
-                                OrderedProduct = _context.OrderedProduct.Find(orderedProduct.Id),//_mapper.Map<OrderedProduct>(orderedProduct),
+                                OrderedProduct = _context.OrderedProduct.Find(orderedProduct.Id),
                                 Order = orderToUpdate,
                                 Quantity = orderedProduct.Quantity,
                             };
@@ -107,21 +107,7 @@ namespace Blob_API.Controllers
                             ordProdOrd.Quantity = orderedProduct.Quantity;
                         }
 
-                        // Update values
-                        //var newOrderedProduct = _context.OrderedProduct.Find(orderedProduct.Id);//_mapper.Map<OrderedProduct>(orderedProduct);
-
-                        //// Make sure the id still the same.
-                        //newOrderedProduct.Id = ordProdOrd.OrderedProduct.Id;
-
-                        //ordProdOrd.OrderedProduct = newOrderedProduct;
-                        //ordProdOrd.Quantity = orderedProduct.Quantity;
-
-                        // TODO: Reduce stock, but idepotent!
-                        //await ReduceStockAsync(ordProdOrd.Quantity, orderRessource.LocationId, newOrderedProduct.Product.Id);
                     }
-
-                    // Update order and set state to Modified. 
-                    //_context.Entry(orderToUpdate).State = EntityState.Modified;
                 }
 
                 await TryContextSaveAsync();
