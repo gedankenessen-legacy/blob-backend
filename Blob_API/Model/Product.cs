@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
+
 
 namespace Blob_API.Model
 {
+    [DataContract]
     public partial class Product
     {
         public Product()
@@ -14,10 +17,15 @@ namespace Blob_API.Model
             ProductProperty = new HashSet<ProductProperty>();
         }
 
+        [DataMember]
         public uint Id { get; set; }
+        [DataMember]
         public string Name { get; set; }
+        [DataMember]
         public decimal Price { get; set; }
+        [DataMember]
         public string Sku { get; set; }
+        [DataMember]
         public DateTime? CreatedAt { get; set; }
 
         [JsonIgnore]
