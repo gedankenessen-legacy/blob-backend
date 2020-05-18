@@ -10,6 +10,7 @@ namespace Blob_API.RessourceModels
 
         public uint Id { get; set; }
         public uint LocationId { get; set; }
+        public DateTime? CreatedAt { get; set; }
         public CustomerRessource Customer { get; set; }
         public ICollection<OrderedProductRessource> OrderedProducts { get; set; }
         public State State { get; set; }

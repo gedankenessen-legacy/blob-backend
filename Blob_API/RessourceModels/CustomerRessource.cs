@@ -12,7 +12,7 @@ namespace Blob_API.RessourceModels
         public uint Id { get; set; }
         public string Firstname { get; set; }
         public string Lastname { get; set; }
-        public virtual Address Address { get; set; } // TODO: AddressRessource class
-        //public DateTime? CreatedAt { get; set; }
+        public virtual Address Address { get; set; }
+        public DateTime? CreatedAt { get; set; }
     }
 }
