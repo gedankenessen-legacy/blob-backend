@@ -69,6 +69,9 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<IActionResult> PutOrderAsync([FromBody] IEnumerable<OrderRessource> orderRessources)
         {
+            // TODO: Reduce Stock
+
+
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 // Update entries
@@ -123,6 +126,9 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<OrderRessource>> PostOrderAsync(OrderRessource orderRessource)
         {
+            // TODO: Reduce Stock
+
+
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 // Check if the customer already exists.
@@ -225,6 +231,11 @@ namespace Blob_API.Controllers
             }
         }
 
+        /// <summary>
+        /// Checks if a order exists in the database.
+        /// </summary>
+        /// <param name="id">The order-id</param>
+        /// <returns>true if order is found, fals if not.</returns>
         private bool OrderExists(uint id)
         {
             return _context.Order.Any(e => e.Id == id);
@@ -269,7 +280,10 @@ namespace Blob_API.Controllers
                 return (false, "Not enough items in stock.");
         }
 
-
+        /// <summary>
+        /// Saves changes on the context back to the Database
+        /// </summary>
+        /// <returns>Task or Problem if exception occurs</returns>
         private async Task<ActionResult> TryContextSaveAsync()
         {
             try
