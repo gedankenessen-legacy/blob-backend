@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Blob_API.Model
 {
+    [DataContract]
     public partial class Order
     {
         public Order()
@@ -11,18 +13,25 @@ namespace Blob_API.Model
             OrderedProductOrder = new HashSet<OrderedProductOrder>();
         }
 
+        [DataMember]
         public uint Id { get; set; }
+        [DataMember]
         public DateTime? CreatedAt { get; set; }
-        [JsonIgnore]
+        [DataMember]
         public uint CustomerId { get; set; }
-        [JsonIgnore]
+        [DataMember]
         public uint OrderedCustomerId { get; set; }
-        [JsonIgnore]
+        [DataMember]
         public uint StateId { get; set; }
 
-        public virtual Customer Customer { get; set; }
-        public virtual OrderedCustomer OrderedCustomer { get; set; }
-        public virtual State State { get; set; }
+
+        [JsonIgnore]
         public virtual ICollection<OrderedProductOrder> OrderedProductOrder { get; set; }
+        [JsonIgnore]
+        public virtual Customer Customer { get; set; }
+        [JsonIgnore]
+        public virtual OrderedCustomer OrderedCustomer { get; set; }
+        [JsonIgnore]
+        public virtual State State { get; set; }
     }
 }
