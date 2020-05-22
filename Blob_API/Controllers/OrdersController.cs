@@ -74,40 +74,77 @@ namespace Blob_API.Controllers
                 // Update entries
                 foreach (var orderRessource in orderRessources)
                 {
+                    // check if the order exists.
                     if (!OrderExists(orderRessource.Id))
                     {
                         return NotFound("One or more objects did not exist in the Database, Id was not found.");
                     }
 
-                    if (orderRessource.LocationId <= 0)
+                    // check if the state id exists.
+                    if (!(await _context.State.AnyAsync(x => x.Id == orderRessource.State.Id)))
                     {
-                        return BadRequest("No location id provided!");
+                        return NotFound($"The State with the ID={orderRessource.State.Id}, was not found in the Database.");
                     }
 
-                    var orderToUpdate = _context.Order.Find(orderRessource.Id);
+                    //if (orderRessource.LocationId <= 0)
+                    //{
+                    //    return BadRequest("No location id provided!");
+                    //}
 
-                    foreach (var orderedProduct in orderRessource.OrderedProducts)
+                    var orderToUpdate = await _context.Order.FindAsync(orderRessource.Id);
+
+                    // Update state
+                    orderToUpdate.State = await _context.State.FindAsync(orderRessource.State.Id);
+
+                    foreach (var orderedProductRessource in orderRessource.OrderedProducts)
                     {
+                        // check if the product exists.
+                        Product product = _context.Product.Find(orderedProductRessource.Id);
+                        if (product == null)
+                        {
+                            return NotFound($"The ordered product with the ID={orderedProductRessource.Id} was not found.");
+                        }
+
                         // Check if product is already in OrderedProductOrder table.
-                        OrderedProductOrder ordProdOrd = _context.OrderedProductOrder.Find(orderedProduct.Id, orderRessource.Id);
+                        OrderedProductOrder ordProdOrd = _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id);
 
                         // If not create it.
                         if (ordProdOrd == null)
                         {
                             ordProdOrd = new OrderedProductOrder()
                             {
-                                OrderedProduct = _context.OrderedProduct.Find(orderedProduct.Id),
+                                OrderedProduct = _context.OrderedProduct.Find(orderedProductRessource.Id),
                                 Order = orderToUpdate,
-                                Quantity = orderedProduct.Quantity,
+                                Quantity = orderedProductRessource.Quantity,
                             };
                             await _context.OrderedProductOrder.AddAsync(ordProdOrd);
                         }
-                        else if (ordProdOrd.Quantity != orderedProduct.Quantity)
+                        else if (ordProdOrd.Quantity != orderedProductRessource.Quantity)
                         {
-                            ordProdOrd.Quantity = orderedProduct.Quantity;
+                            ordProdOrd.Quantity = orderedProductRessource.Quantity;
                         }
 
+                        #region Reduce Stock
+                        //// TODO: What if the quantity of the ordered product quantity is changed? Add/Sub the diff. to the stock...
+                        //// Reduce the stock of the item on the location with the highest quantity.
+                        //var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
+                        //if (productsAtLocation == null)
+                        //{
+                        //    return BadRequest($"Not enough quantity for productId: {product.Id}");
+                        //}
+
+                        //// Check if enough products in stock and reduce.
+                        //uint reduced = ReduceStock(orderedProductRessource, productsAtLocation);
+
+                        //// still items to be reduced, but nothing in stock.
+                        //if (reduced > 0)
+                        //{
+                        //    return BadRequest($"Not enough quantity for productId: {product.Id}");
+                        //}
+                        #endregion
                     }
+
+                    //_context.Entry(orderToUpdate).State = EntityState.Modified;
                 }
 
                 await TryContextSaveAsync();
@@ -123,6 +160,9 @@ namespace Blob_API.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<OrderRessource>> PostOrderAsync(OrderRessource orderRessource)
         {
+            // TODO: Reduce Stock
+
+
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 // Check if the customer already exists.
@@ -139,37 +179,40 @@ namespace Blob_API.Controllers
                     return BadRequest("The address does not exist.");
                 }
 
+                #region Backup Address
                 // Create "ghost/copy/backup"-Address
                 // TODO: var newOrderedAddress =_mapper.Map<OrderedAddress>(address);
-                OrderedAddress newOrderedAddress = new OrderedAddress()
+                var backupedAddress = new OrderedAddress()
                 {
                     Street = address.Street,
                     Zip = address.Zip,
                     City = address.City
                 };
 
-                await _context.OrderedAddress.AddAsync(newOrderedAddress);
+                await _context.OrderedAddress.AddAsync(backupedAddress);
+                #endregion
 
+                #region Backup Customer
                 // Create "ghost/copy/backup"-Customer
                 OrderedCustomer newOrderedCustomer = new OrderedCustomer()
                 {
                     Firstname = customer.Firstname,
                     Lastname = customer.Lastname,
-                    OrderedAddress = newOrderedAddress
+                    OrderedAddress = backupedAddress
                 };
                 await _context.OrderedCustomer.AddAsync(newOrderedCustomer);
+                #endregion
 
                 Order newOrder = new Order
                 {
                     CreatedAt = DateTime.Now.ToUniversalTime(),
                     Customer = customer,
-                    State = _context.State.First(),
+                    State = await _context.State.FindAsync(1),
                     OrderedCustomer = newOrderedCustomer
                 };
 
                 await _context.Order.AddAsync(newOrder);
 
-                // TODO: S19.4: Create backup of products
                 OrderedProductRessource[] array = orderRessource.OrderedProducts.ToArray();
 
                 for (int i = 0; i < array.Length; i++)
@@ -184,6 +227,7 @@ namespace Blob_API.Controllers
                         return NotFound($"The ordered product with the ID={orderedProductRessource.Id} was not found.");
                     }
 
+                    #region Backup Product
                     // Add "ghost/copy/backup"-Product if no entry exists.
                     uint orderedProductId = 0;
                     OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).First();
@@ -201,8 +245,9 @@ namespace Blob_API.Controllers
 
                         orderedProduct = ordProd;
                     }
+                    #endregion
 
-
+                    #region Add ordered product to OrderedProductTable
                     // Add orderedProduct to OrderedProductOrder-Table if no entry exists.
                     // BUG: id is always 0
                     var ordProdOrd = _context.OrderedProductOrder.Find(ordProd.Id, newOrder.Id);
@@ -216,6 +261,25 @@ namespace Blob_API.Controllers
                         };
                         await _context.OrderedProductOrder.AddAsync(opo);
                     }
+                    #endregion
+
+                    #region Reduce Stock
+                    // Reduce the stock of the item on the location with the highest quantity.
+                    var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
+                    if (productsAtLocation == null)
+                    {
+                        return BadRequest($"Not enough quantity for productId: {product.Id}");
+                    }
+
+                    // Check if enough products in stock and reduce.
+                    uint reduced = ReduceStock(orderedProductRessource, productsAtLocation);
+
+                    // still items to be reduced, but nothing in stock.
+                    if (reduced > 0)
+                    {
+                        return BadRequest($"Not enough quantity for productId: {product.Id}");
+                    }
+                    #endregion
                 }
 
                 await TryContextSaveAsync();
@@ -225,6 +289,40 @@ namespace Blob_API.Controllers
             }
         }
 
+        /// <summary>
+        /// Reduces the stock of an item.
+        /// </summary>
+        /// <param name="orderedProductRessource">The product which stock needs to be reduced</param>
+        /// <param name="productsAtLocation">List of Locations where the product is in stock</param>
+        /// <returns>0 if the stock is reduced successfully, if >0 not enough items in stock</returns>
+        private uint ReduceStock(OrderedProductRessource orderedProductRessource, List<LocationProduct> productsAtLocation)
+        {
+            var reduced = orderedProductRessource.Quantity;
+            foreach (var productAtLocation in productsAtLocation)
+            {
+                if (reduced > 0)
+                {
+                    if (productAtLocation.Quantity >= reduced)
+                    {
+                        productAtLocation.Quantity -= reduced;
+                        reduced = 0;
+                    }
+                    else
+                    {
+                        reduced -= productAtLocation.Quantity;
+                        productAtLocation.Quantity = 0;
+                    }
+                }
+            }
+
+            return reduced;
+        }
+
+        /// <summary>
+        /// Checks if a order exists in the database.
+        /// </summary>
+        /// <param name="id">The order-id</param>
+        /// <returns>true if order is found, fals if not.</returns>
         private bool OrderExists(uint id)
         {
             return _context.Order.Any(e => e.Id == id);
@@ -269,7 +367,10 @@ namespace Blob_API.Controllers
                 return (false, "Not enough items in stock.");
         }
 
-
+        /// <summary>
+        /// Saves changes on the context back to the Database
+        /// </summary>
+        /// <returns>Task or Problem if exception occurs</returns>
         private async Task<ActionResult> TryContextSaveAsync()
         {
             try
