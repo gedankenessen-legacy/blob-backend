@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Blob_API.Model
+namespace Blob_API.AuthModel
 {
     public class User : IdentityUser<uint>
     {
