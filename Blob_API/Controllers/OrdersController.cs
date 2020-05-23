@@ -8,10 +8,13 @@ using Blob_API.Model;
 using Microsoft.Extensions.Logging;
 using AutoMapper;
 using Blob_API.RessourceModels;
+using Microsoft.AspNetCore.Authorization;
+using OpenIddict.Validation;
 
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
+    //[Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class OrdersController : ControllerBase
     {

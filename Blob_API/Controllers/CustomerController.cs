@@ -7,10 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blob_API.Model;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authorization;
+using OpenIddict.Validation;
 
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
+    //[Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class CustomerController : ControllerBase
     {
