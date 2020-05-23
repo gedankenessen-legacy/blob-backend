@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using OpenIddict.Validation;
 using System;
 
 namespace Blob_API
@@ -43,6 +44,38 @@ namespace Blob_API
             // ASP.NET Core Identity registrieren.
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<BlobAuthContext>();
+
+            // OpenIddict hinzufügen und konf.
+            services.AddOpenIddict()
+                .AddCore(opt =>
+                {
+                    opt.UseEntityFrameworkCore()
+                        .UseDbContext<BlobAuthContext>()
+                        .ReplaceDefaultEntities<uint>();
+                })
+                .AddServer(opt =>
+                {
+                    opt.UseMvc();
+                    opt.DisableHttpsRequirement();
+                    opt.EnableTokenEndpoint("/token");
+                    opt.AllowPasswordFlow();
+                    opt.AcceptAnonymousClients();
+                })
+                .AddValidation();
+
+            // Identity und OpenIddict nutzen nun die gleichen Claim-Namen.
+            services.Configure<IdentityOptions>(opt =>
+            {
+                opt.ClaimsIdentity.UserNameClaimType = OpenIdConnectConstants.Claims.Name;
+                opt.ClaimsIdentity.UserIdClaimType = OpenIdConnectConstants.Claims.Subject;
+                opt.ClaimsIdentity.RoleClaimType = OpenIdConnectConstants.Claims.Role;
+            });
+
+            // OpenIddict auth schema.
+            services.AddAuthentication(opt =>
+            {
+                opt.DefaultScheme = OpenIddictValidationDefaults.AuthenticationScheme;
+            });
 
             // Identity konfigurieren.
             services.Configure<IdentityOptions>(options =>
