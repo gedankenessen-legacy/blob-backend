@@ -29,6 +29,15 @@ namespace Blob_API
                 opt.UseMySql(Configuration.GetConnectionString("BlobContext"));
             });
 
+            services.AddCors(options =>
+            {
+                options.AddPolicy("ng",
+                builder =>
+                {
+                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200");
+                });
+            });
+
             // NewtonsoftJson nutzen und konfigurieren
             services.AddControllers()
                 .AddNewtonsoftJson(opt =>
@@ -67,6 +76,8 @@ namespace Blob_API
             });
 
             app.UseRouting();
+
+            app.UseCors("ng");
 
             app.UseAuthorization();
 
