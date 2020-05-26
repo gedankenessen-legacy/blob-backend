@@ -100,14 +100,14 @@ namespace Blob_API
                 // User settings.
                 options.User.AllowedUserNameCharacters = Configuration["Identity:AllowedChars"];
                 options.User.RequireUniqueEmail = true;
-            };
+            });
 
             services.AddCors(options =>
             {
                 options.AddPolicy("ng",
                 builder =>
                 {
-                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200");
+                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins(Configuration.GetSection("AllowedHosts").Get<string[]>());
                 });
             });
 
