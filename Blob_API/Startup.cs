@@ -100,6 +100,15 @@ namespace Blob_API
                 // User settings.
                 options.User.AllowedUserNameCharacters = Configuration["Identity:AllowedChars"];
                 options.User.RequireUniqueEmail = true;
+            };
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy("ng",
+                builder =>
+                {
+                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200");
+                });
             });
 
             // NewtonsoftJson nutzen und konfigurieren
@@ -140,6 +149,8 @@ namespace Blob_API
             });
 
             app.UseRouting();
+
+            app.UseCors("ng");
 
             app.UseAuthorization();
 
