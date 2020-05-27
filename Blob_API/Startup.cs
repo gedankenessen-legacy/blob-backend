@@ -12,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using OpenIddict.Validation;
 using System;
+using System.Linq;
 
 namespace Blob_API
 {
@@ -52,12 +53,13 @@ namespace Blob_API
                     opt.UseEntityFrameworkCore()
                         .UseDbContext<BlobAuthContext>()
                         .ReplaceDefaultEntities<uint>();
+                    //opt.UseAspNetCore().EnableTokenEndpointPassthrough()
                 })
                 .AddServer(opt =>
                 {
                     opt.UseMvc();
                     opt.DisableHttpsRequirement();
-                    opt.EnableTokenEndpoint("/token");
+                    opt.EnableTokenEndpoint("/api/token");
                     opt.AllowPasswordFlow();
                     opt.AcceptAnonymousClients();
                 })
@@ -99,7 +101,7 @@ namespace Blob_API
 
                 // User settings.
                 options.User.AllowedUserNameCharacters = Configuration["Identity:AllowedChars"];
-                options.User.RequireUniqueEmail = true;
+                options.User.RequireUniqueEmail = false;
             });
 
             services.AddCors(options =>
@@ -124,6 +126,8 @@ namespace Blob_API
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
             {
+                // if two actions found, break after first.
+                c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Blob API", Version = "v1" });
             });
         }
@@ -152,6 +156,7 @@ namespace Blob_API
 
             app.UseCors("ng");
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
