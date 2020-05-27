@@ -14,7 +14,7 @@ using OpenIddict.Validation;
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
-    //[Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class OrdersController : ControllerBase
     {
