@@ -13,13 +13,13 @@ namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class OrdersController : ControllerBase
+    public class OrderController : ControllerBase
     {
         private readonly BlobContext _context;
-        private readonly ILogger<OrdersController> _logger;
+        private readonly ILogger<OrderController> _logger;
         private readonly IMapper _mapper;
 
-        public OrdersController(BlobContext context, ILogger<OrdersController> logger, IMapper mapper)
+        public OrderController(BlobContext context, ILogger<OrderController> logger, IMapper mapper)
         {
             _context = context;
             _logger = logger;
