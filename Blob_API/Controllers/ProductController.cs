@@ -225,20 +225,30 @@ namespace Blob_API.Controllers
 
         private async void AddToProductCategoryTable(Product product, Category category)
         {
-            await _context.CategoryProduct.AddAsync(new CategoryProduct()
+            var found = _context.CategoryProduct.Find(category.Id, product.Id);
+            if (found == null)
             {
-                Category = category,
-                Product = product
-            });
+                await _context.CategoryProduct.AddAsync(new CategoryProduct()
+                {
+                    Category = category,
+                    Product = product
+                });
+            }
+            // else already set.
+
+            
         }
 
         private async void AddToProductPropertyTable(Product product, Property property)
         {
-            await _context.ProductProperty.AddAsync(new ProductProperty()
-            {
-                Product = product,
-                Property = property
-            });
+            var found = _context.ProductProperty.Find(product.Id, property.Id);
+
+            if (found == null)
+                await _context.ProductProperty.AddAsync(new ProductProperty()
+                {
+                    Product = product,
+                    Property = property
+                });
         }
 
         private void DeleteProductProperty(Product product)
@@ -267,9 +277,7 @@ namespace Blob_API.Controllers
             {
                 foreach (var productCategory in product.CategoryProduct)
                 {
-                    var CP = _context.CategoryProduct.Find(product.Id,
-                        productCategory.CategoryId);
-
+                    var CP = _context.CategoryProduct.Find(productCategory.CategoryId, product.Id);
 
                     if (CP != null)
                     {
@@ -293,8 +301,7 @@ namespace Blob_API.Controllers
                     if (LP != null)
                     {
                         _context.Entry(LP).State = EntityState.Detached;
-                        _context.LocationProduct.Remove(_context.LocationProduct.Find(product.Id,
-                            locationProduct.LocationId));
+                        _context.LocationProduct.Remove(_context.LocationProduct.Find(locationProduct.LocationId, product.Id));
                     }
                 }
             }
@@ -414,7 +421,6 @@ namespace Blob_API.Controllers
                     Product = product,
                     Quantity = productLocation.Quantity
                 });
-
             }
 
             return NoContent();
