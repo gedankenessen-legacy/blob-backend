@@ -36,9 +36,10 @@ namespace Blob_API.Controllers
             return Ok(_mapper.Map<IEnumerable<UserRessource>>(allUsers));
         }
 
+        // GET: api/user/5
         [HttpGet("{id}")]
-        [ActionName(nameof(GetUserAsync))]
-        public async Task<ActionResult<UserRessource>> GetUserAsync(uint id)
+        [ActionName(nameof(GetUser))]
+        public ActionResult<UserRessource> GetUser(uint id)
         {
             var user = _userManager.Users.Where(u => u.Id == id).FirstOrDefault();
 
@@ -70,7 +71,7 @@ namespace Blob_API.Controllers
                 return BadRequest("Unable to create user.");
             }
 
-            return CreatedAtAction(nameof(GetUserAsync), new { id = newUser.Id }, _mapper.Map<UserRessource>(newUser));
+            return CreatedAtAction(nameof(GetUser), new { id = newUser.Id }, _mapper.Map<UserRessource>(newUser));
         }
 
         /// <summary>
