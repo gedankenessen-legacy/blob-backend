@@ -203,11 +203,18 @@ namespace Blob_API.Controllers
                 await _context.OrderedCustomer.AddAsync(newOrderedCustomer);
                 #endregion
 
+                // Check if state is provided.
+                uint stateId = 1;
+                if (orderRessource.State != null)
+                {
+                    stateId = orderRessource.State.Id;
+                }
+
                 Order newOrder = new Order
                 {
                     CreatedAt = DateTime.Now.ToUniversalTime(),
                     Customer = customer,
-                    State = await _context.State.FindAsync(1),
+                    State = await _context.State.FindAsync(stateId),
                     OrderedCustomer = newOrderedCustomer
                 };
 
