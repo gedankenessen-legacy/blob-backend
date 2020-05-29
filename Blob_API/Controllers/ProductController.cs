@@ -91,43 +91,29 @@ namespace Blob_API.Controllers
 
                     //TODO Update Stock
                     DeleteProductProperty(productToUpdate);
+                    await TryContextSaveAsync();
                     if (productRessource.Properties != null)
                     {
                         await AddPropertyToProduct(productToUpdate, productRessource);
                     }
 
-                    //DeleteProductCategory(productToUpdate);
+                    DeleteProductCategory(productToUpdate);
+                    await TryContextSaveAsync();
                     if (productRessource.Categories != null)
                     {
-                        //await AddCategoryToProduct(productToUpdate, productRessource);
+                        await AddCategoryToProduct(productToUpdate, productRessource);
                     }
 
-                 
-                    /*if (productRessource.ProductsAtLocations != null)
+                    DeleteProductLocation(productToUpdate);
+                    await TryContextSaveAsync();
+                    if (productRessource.ProductsAtLocations != null)
                     {
-                        foreach (var productLocation in productRessource.ProductsAtLocations)
-                        {
-                            var location =
-                                await _context.Location.FindAsync(productLocation.LocationId);
-
-                            if (location == null)
-                            {
-                                return BadRequest("Die angegeben Location existiert nicht!");
-                            }
-
-                            if (productLocation.Quantity < 0)
-                            {
-                                return BadRequest("The Anzahl can not be under 0 ");
-                            }
-
-                            await _context.LocationProduct.AddAsync(new LocationProduct()
-                            {
-                                Location = location,
-                                Product = productToUpdate,
-                                Quantity = productLocation.Quantity
-                            });
-                        }
-                    }*/
+                        await AddLocationToProduct(productToUpdate, productRessource);
+                    }
+                    else
+                    {
+                        return BadRequest("Dem Produkt muss mindestens einem Standort Zugewissen sein");
+                    }
                    
                 }
 
@@ -180,29 +166,7 @@ namespace Blob_API.Controllers
 
                 if (productRessource.ProductsAtLocations != null)
                 {
-                    foreach (var productLocation in productRessource.ProductsAtLocations)
-                    {
-                        var location =
-                            await _context.Location.FindAsync(productLocation.LocationId);
-
-                        if (location == null)
-                        {
-                            return BadRequest("Die angegeben Location existiert nicht!");
-                        }
-
-                        if (productLocation.Quantity < 0)
-                        {
-                            return BadRequest("The Anzahl can not be under 0 ");
-                        }
-
-                        await _context.LocationProduct.AddAsync(new LocationProduct()
-                        {
-                            Location = location,
-                            Product = newProduct,
-                            Quantity = productLocation.Quantity
-                        });
-                        
-                    }
+                    await AddLocationToProduct(newProduct, productRessource);
                 }
                 else
                 {
@@ -283,7 +247,16 @@ namespace Blob_API.Controllers
             {
                 foreach (var productProperty in product.ProductProperty)
                 {
-                     _context.ProductProperty.Remove(_context.ProductProperty.Find(product.Id, productProperty.PropertyId));
+                    var PP = _context.ProductProperty.Find(product.Id, productProperty.PropertyId);
+
+                   
+
+                    if (PP != null)
+                    {
+                        _context.Entry(PP).State = EntityState.Detached;
+                        _context.ProductProperty.Remove(PP);
+                    }
+                    
                 } 
             }
         }
@@ -294,8 +267,15 @@ namespace Blob_API.Controllers
             {
                 foreach (var productCategory in product.CategoryProduct)
                 {
-                    _context.CategoryProduct.Remove(_context.CategoryProduct.Find(product.Id,
-                        productCategory.CategoryId));
+                    var CP = _context.CategoryProduct.Find(product.Id,
+                        productCategory.CategoryId);
+
+
+                    if (CP != null)
+                    {
+                        _context.Entry(CP).State = EntityState.Detached;
+                        _context.CategoryProduct.Remove(CP);
+                    }
                 }
             }
         }
@@ -306,8 +286,16 @@ namespace Blob_API.Controllers
             {
                 foreach (var locationProduct in product.LocationProduct)
                 {
-                    _context.LocationProduct.Remove(_context.LocationProduct.Find(product.Id,
-                        locationProduct.LocationId));
+                    var LP = _context.LocationProduct.Find(product.Id,
+                        locationProduct.LocationId);
+
+
+                    if (LP != null)
+                    {
+                        _context.Entry(LP).State = EntityState.Detached;
+                        _context.LocationProduct.Remove(_context.LocationProduct.Find(product.Id,
+                            locationProduct.LocationId));
+                    }
                 }
             }
         }
@@ -398,6 +386,35 @@ namespace Blob_API.Controllers
                     AddToProductCategoryTable(product, category);
 
                 }
+            }
+
+            return NoContent();
+        }
+
+        private async Task<ActionResult> AddLocationToProduct(Product product, ProductRessource productRessource)
+        {
+            foreach (var productLocation in productRessource.ProductsAtLocations)
+            {
+                var location =
+                    await _context.Location.FindAsync(productLocation.LocationId);
+
+                if (location == null)
+                {
+                    return BadRequest("Die angegeben Location existiert nicht!");
+                }
+
+                if (productLocation.Quantity < 0)
+                {
+                    return BadRequest("The Anzahl can not be under 0 ");
+                }
+
+                await _context.LocationProduct.AddAsync(new LocationProduct()
+                {
+                    Location = location,
+                    Product = product,
+                    Quantity = productLocation.Quantity
+                });
+
             }
 
             return NoContent();
