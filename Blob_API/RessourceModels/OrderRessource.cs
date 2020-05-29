@@ -9,7 +9,7 @@ namespace Blob_API.RessourceModels
         public OrderRessource() { }
 
         public uint Id { get; set; }
-        public uint LocationId { get; set; }
+        //public uint LocationId { get; set; }
         public DateTime? CreatedAt { get; set; }
         public CustomerRessource Customer { get; set; }
         public ICollection<OrderedProductRessource> OrderedProducts { get; set; }

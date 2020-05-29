@@ -173,7 +173,9 @@ namespace Blob_API.Controllers
                 }
 
                 // Check if the address already exists.
-                Address address = _context.Address.Find(orderRessource.Customer.Address.Id);
+
+
+                Address address = _context.Address.Find(customer.Address.Id);
                 if (address == null)
                 {
                     return BadRequest("The address does not exist.");
