@@ -198,6 +198,11 @@ namespace Blob_API.Controllers
 
                 var productToDelete = _context.Product.Find(id);
 
+                DeleteProductProperty(productToDelete);
+                DeleteProductCategory(productToDelete);
+                DeleteProductLocation(productToDelete);
+                await TryContextSaveAsync();
+
                 _context.Product.Remove(productToDelete);
 
                 await TryContextSaveAsync();
