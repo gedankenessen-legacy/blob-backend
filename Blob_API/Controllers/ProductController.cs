@@ -89,6 +89,11 @@ namespace Blob_API.Controllers
                         productToUpdate.Price = productRessource.Price;
                     }
 
+                    if (productRessource.ProductsAtLocations.Count == 0)
+                    {
+                        return BadRequest("Dem Produkt muss mindestens einen Standort zugewissen sein");
+                    }
+
                     //TODO Update Stock
                     DeleteProductProperty(productToUpdate);
                     await TryContextSaveAsync();
@@ -110,10 +115,7 @@ namespace Blob_API.Controllers
                     {
                         await AddLocationToProduct(productToUpdate, productRessource);
                     }
-                    else
-                    {
-                        return BadRequest("Dem Produkt muss mindestens einem Standort Zugewissen sein");
-                    }
+                   
                    
                 }
 
@@ -144,6 +146,11 @@ namespace Blob_API.Controllers
                     return Problem("The Products Price can not be under 0", statusCode: 404, title: "User Error");
                 }
 
+                if (productRessource.ProductsAtLocations.Count == 0)
+                {
+                    return BadRequest("Dem Produkt muss mindestens einen Standort zugewissen sein");
+                }
+
                 var newProduct = new Product()
                 {
                     CreatedAt = DateTime.Now.ToUniversalTime(),
@@ -168,10 +175,6 @@ namespace Blob_API.Controllers
                 {
                     await AddLocationToProduct(newProduct, productRessource);
                 }
-                else
-                {
-                    return BadRequest("Dem Produkt muss mindestens einem Standort Zugewissen sein");
-                }
 
                 await TryContextSaveAsync();
                 await transaction.CommitAsync();
@@ -186,16 +189,22 @@ namespace Blob_API.Controllers
         public async Task<IActionResult> DeleteProduct(uint id)
         {
 
-            if (!ProductExists(id))
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                if (!ProductExists(id))
+                {
+                    return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                }
+
+                var productToDelete = _context.Product.Find(id);
+
+                _context.Product.Remove(productToDelete);
+
+                await TryContextSaveAsync();
+                await transaction.CommitAsync();
+
+                return NoContent();
             }
-
-            _context.Product.Remove(_context.Product.Find(id));
-
-            await TryContextSaveAsync();
-
-            return NoContent();
         }
 
         private bool ProductExists(uint id)
@@ -294,14 +303,13 @@ namespace Blob_API.Controllers
             {
                 foreach (var locationProduct in product.LocationProduct)
                 {
-                    var LP = _context.LocationProduct.Find(product.Id,
-                        locationProduct.LocationId);
+                    var LP = _context.LocationProduct.Find(locationProduct.LocationId, product.Id);
 
 
                     if (LP != null)
                     {
                         _context.Entry(LP).State = EntityState.Detached;
-                        _context.LocationProduct.Remove(_context.LocationProduct.Find(locationProduct.LocationId, product.Id));
+                        _context.LocationProduct.Remove(LP);
                     }
                 }
             }
