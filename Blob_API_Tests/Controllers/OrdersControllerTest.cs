@@ -91,7 +91,7 @@ namespace Blob_API_Tests.Controllers
 
 
             // Act = Processing
-            var task = await _ordersController.PutOrderAsync(orders);
+           // var task = await _ordersController.PutOrderAsync(orders);
 
             // Assert
             Assert.Equal((uint)2, _blobContext.Order.Find((uint)1).StateId);
