@@ -16,13 +16,13 @@ namespace Blob_API.Controllers
     [Route("api/[controller]")]
     //[Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
-    public class OrdersController : ControllerBase
+    public class OrderController : ControllerBase
     {
         private readonly BlobContext _context;
-        private readonly ILogger<OrdersController> _logger;
+        private readonly ILogger<OrderController> _logger;
         private readonly IMapper _mapper;
 
-        public OrdersController(BlobContext context, ILogger<OrdersController> logger, IMapper mapper)
+        public OrderController(BlobContext context, ILogger<OrderController> logger, IMapper mapper)
         {
             _context = context;
             _logger = logger;
@@ -176,7 +176,9 @@ namespace Blob_API.Controllers
                 }
 
                 // Check if the address already exists.
-                Address address = _context.Address.Find(orderRessource.Customer.Address.Id);
+
+
+                Address address = _context.Address.Find(customer.Address.Id);
                 if (address == null)
                 {
                     return BadRequest("The address does not exist.");
@@ -206,11 +208,18 @@ namespace Blob_API.Controllers
                 await _context.OrderedCustomer.AddAsync(newOrderedCustomer);
                 #endregion
 
+                // Check if state is provided.
+                uint stateId = 1;
+                if (orderRessource.State != null)
+                {
+                    stateId = orderRessource.State.Id;
+                }
+
                 Order newOrder = new Order
                 {
                     CreatedAt = DateTime.Now.ToUniversalTime(),
                     Customer = customer,
-                    State = await _context.State.FindAsync(1),
+                    State = await _context.State.FindAsync(stateId),
                     OrderedCustomer = newOrderedCustomer
                 };
 

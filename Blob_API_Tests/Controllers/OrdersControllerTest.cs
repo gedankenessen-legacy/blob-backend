@@ -13,10 +13,10 @@ using Xunit;
 namespace Blob_API_Tests.Controllers
 {
     // Use: AAA principle (Arrange, Act and Assert)
-    public class OrdersControllerTest
+    public class OrderControllerTest
     {
         // Arrange = Setup
-        private readonly OrdersController _ordersController;
+        private readonly OrderController _ordersController;
         private readonly BlobContext _blobContext;
         private readonly IMapper _mapper;
         private Order newOrder = new Order()
@@ -28,7 +28,7 @@ namespace Blob_API_Tests.Controllers
             StateId = 2
         };
 
-        public OrdersControllerTest()
+        public OrderControllerTest()
         {
             DbContextOptions<BlobContext> options;
             var builder = new DbContextOptionsBuilder<BlobContext>();
@@ -45,7 +45,7 @@ namespace Blob_API_Tests.Controllers
 
             SeedDatabase.SeedDatabaseWithDefaultData(_blobContext);
 
-            _ordersController = new OrdersController(_blobContext, null, mapper);
+            _ordersController = new OrderController(_blobContext, null, mapper);
         }
 
         [Fact]
