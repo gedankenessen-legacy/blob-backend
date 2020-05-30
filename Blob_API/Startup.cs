@@ -1,12 +1,18 @@
+using AspNet.Security.OpenIdConnect.Primitives;
 using AutoMapper;
+using Blob_API.AuthModel;
 using Blob_API.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using OpenIddict.Validation;
+using System;
+using System.Linq;
 
 namespace Blob_API
 {
@@ -29,12 +35,81 @@ namespace Blob_API
                 opt.UseMySql(Configuration.GetConnectionString("BlobContext"));
             });
 
+            // Auth Datenbank Kontext anlegen
+            services.AddDbContext<BlobAuthContext>(opt =>
+            {
+                opt.UseMySql(Configuration.GetConnectionString("BlobContext"))
+                .UseOpenIddict();
+            });
+
+            // ASP.NET Core Identity registrieren.
+            services.AddIdentity<User, UserRole>()
+                .AddEntityFrameworkStores<BlobAuthContext>();
+
+            // OpenIddict hinzufügen und konf.
+            services.AddOpenIddict()
+                .AddCore(opt =>
+                {
+                    opt.UseEntityFrameworkCore()
+                        .UseDbContext<BlobAuthContext>()
+                        .ReplaceDefaultEntities<uint>();
+                    //opt.UseAspNetCore().EnableTokenEndpointPassthrough()
+                })
+                .AddServer(opt =>
+                {
+                    opt.UseMvc();
+                    opt.DisableHttpsRequirement();
+                    opt.EnableTokenEndpoint("/api/token");
+                    opt.AllowPasswordFlow();
+                    opt.AcceptAnonymousClients();
+                })
+                .AddValidation();
+
+            // Identity und OpenIddict nutzen nun die gleichen Claim-Namen.
+            services.Configure<IdentityOptions>(opt =>
+            {
+                opt.ClaimsIdentity.UserNameClaimType = OpenIdConnectConstants.Claims.Name;
+                opt.ClaimsIdentity.UserIdClaimType = OpenIdConnectConstants.Claims.Subject;
+                opt.ClaimsIdentity.RoleClaimType = OpenIdConnectConstants.Claims.Role;
+            });
+
+            // OpenIddict auth schema.
+            services.AddAuthentication(opt =>
+            {
+                opt.DefaultScheme = OpenIddictValidationDefaults.AuthenticationScheme;
+            });
+
+            // Identity konfigurieren.
+            services.Configure<IdentityOptions>(options =>
+            {
+                options.ClaimsIdentity.UserNameClaimType = OpenIdConnectConstants.Claims.Name;
+                options.ClaimsIdentity.UserIdClaimType = OpenIdConnectConstants.Claims.Subject;
+                options.ClaimsIdentity.RoleClaimType = OpenIdConnectConstants.Claims.Role;
+
+                // Password settings.
+                options.Password.RequireDigit = Convert.ToBoolean(Configuration["Identity:RequireDigit"]);
+                options.Password.RequireLowercase = Convert.ToBoolean(Configuration["Identity:RequireLowercase"]);
+                options.Password.RequireNonAlphanumeric = Convert.ToBoolean(Configuration["Identity:RequireNonAlphanumeric"]);
+                options.Password.RequireUppercase = Convert.ToBoolean(Configuration["Identity:RequireUppercase"]);
+                options.Password.RequiredLength = Convert.ToInt32(Configuration["Identity:RequiredLength"]);
+                options.Password.RequiredUniqueChars = Convert.ToInt32(Configuration["Identity:RequiredUniqueChars"]);
+
+                // Lockout settings.
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(Convert.ToDouble(Configuration["Identity:DefaultLockoutTimeSpanInMinutes"]));
+                options.Lockout.MaxFailedAccessAttempts = Convert.ToInt32(Configuration["Identity:MaxFailedAccessAttempts"]);
+                options.Lockout.AllowedForNewUsers = Convert.ToBoolean(Configuration["Identity:AllowedForNewUsers"]);
+
+                // User settings.
+                options.User.AllowedUserNameCharacters = Configuration["Identity:AllowedChars"];
+                options.User.RequireUniqueEmail = false;
+            });
+
             services.AddCors(options =>
             {
                 options.AddPolicy("ng",
                 builder =>
                 {
-                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200");
+                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins(Configuration.GetSection("AllowedHosts").Get<string[]>());
                 });
             });
 
@@ -51,6 +126,8 @@ namespace Blob_API
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
             {
+                // if two actions found, break after first.
+                c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Blob API", Version = "v1" });
             });
         }
@@ -79,6 +156,7 @@ namespace Blob_API
 
             app.UseCors("ng");
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

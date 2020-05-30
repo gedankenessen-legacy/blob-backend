@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blob_API.Model;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authorization;
+using OpenIddict.Validation;
 using AutoMapper;
 using Blob_API.RessourceModels;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -15,6 +17,7 @@ using Microsoft.CodeAnalysis;
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
+    //[Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class CustomerController : ControllerBase
     {
