@@ -10,6 +10,8 @@ autom4te.cache/
 *.tar.gz
 tarballs/
 test-results/
+appsettings*
+db.txt
 
 # Mac bundle stuff
 *.dmg
@@ -323,3 +325,4 @@ ASALocalRun/
 .mfractor/
 # Local History for Visual Studio
 .localhistory/
+Blob_API/db.txt

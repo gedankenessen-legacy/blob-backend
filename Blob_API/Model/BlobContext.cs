@@ -35,8 +35,7 @@ namespace Blob_API.Model
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-                optionsBuilder.UseMySql("server=176.31.26.11;database=Blob;user=remote_db;password=remote2251;sslmode=None;connection timeout=300;default command timeout=300", x => x.ServerVersion("10.4.12-mariadb"));
+                optionsBuilder.UseMySql("", x => x.ServerVersion("10.4.12-mariadb"));
             }
         }
 
@@ -69,6 +68,22 @@ namespace Blob_API.Model
                     .HasDefaultValueSql("''")
                     .HasCharSet("utf8mb4")
                     .HasCollation("utf8mb4_general_ci");
+
+                entity.HasData(
+                    new Address() 
+                    {
+                        Id = 1,
+                        Street = "Im Waldweg 3",
+                        Zip = "77974",
+                        City = "Meißenheim"
+                    },
+                    new Address()
+                    {
+                        Id = 2,
+                        Street = "Königsgasse 14",
+                        Zip = "77770",
+                        City = "Durbach"
+                    });
             });
 
             modelBuilder.Entity<Category>(entity =>
@@ -87,6 +102,12 @@ namespace Blob_API.Model
                     .HasDefaultValueSql("''")
                     .HasCharSet("utf8mb4")
                     .HasCollation("utf8mb4_general_ci");
+
+                entity.HasData(new Category()
+                {
+                    Id = 1,
+                    Name = "Reifen"
+                });
             });
 
             modelBuilder.Entity<CategoryProduct>(entity =>
@@ -114,6 +135,13 @@ namespace Blob_API.Model
                     .HasForeignKey(d => d.ProductId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_ProdCate");
+
+                entity.HasData(
+                    new CategoryProduct()
+                    {
+                        CategoryId = 1,
+                        ProductId = 1
+                    });
             });
 
             modelBuilder.Entity<Customer>(entity =>
@@ -148,6 +176,15 @@ namespace Blob_API.Model
                     .HasForeignKey(d => d.AddressId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_AddCust");
+
+                entity.HasData(new Customer()
+                {
+                    Id = 1,
+                    Firstname = "Philipp",
+                    Lastname = "Heim",
+                    CreatedAt = DateTime.Parse("2020-05-12 21:32:43"),
+                    AddressId = 1
+                });
             });
 
             modelBuilder.Entity<Location>(entity =>
@@ -177,6 +214,20 @@ namespace Blob_API.Model
                     .HasForeignKey(d => d.AddressId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_AddLoc");
+
+                entity.HasData(
+                    new Location()
+                    {
+                        Id = 1,
+                        Name = "Filiale 1",
+                        AddressId = 1
+                    },
+                    new Location()
+                    {
+                        Id = 2,
+                        Name = "Filiale 2",
+                        AddressId = 2
+                    });
             });
 
             modelBuilder.Entity<LocationProduct>(entity =>
@@ -206,6 +257,14 @@ namespace Blob_API.Model
                     .HasForeignKey(d => d.ProductId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_ProdLoc");
+
+                entity.HasData(
+                    new LocationProduct()
+                    {
+                        LocationId = 1,
+                        ProductId = 1,
+                        Quantity = 8
+                    });
             });
 
             modelBuilder.Entity<Order>(entity =>
@@ -248,6 +307,24 @@ namespace Blob_API.Model
                     .HasForeignKey(d => d.StateId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_state");
+
+                entity.HasData(
+                    new Order() 
+                    { 
+                        Id = 1,
+                        CreatedAt = DateTime.Parse("2020-05-12 21:32:43"),
+                        CustomerId = 1,
+                        OrderedCustomerId = 1,
+                        StateId = 2
+                    },
+                    new Order()
+                    {
+                        Id = 2,
+                        CreatedAt = DateTime.Parse("2020-05-12 23:56:08"),
+                        CustomerId = 1,
+                        OrderedCustomerId = 1,
+                        StateId = 1
+                    });
             });
 
             modelBuilder.Entity<OrderedAddress>(entity =>
@@ -277,6 +354,15 @@ namespace Blob_API.Model
                     .HasDefaultValueSql("''")
                     .HasCharSet("utf8mb4")
                     .HasCollation("utf8mb4_general_ci");
+
+                entity.HasData(
+                    new OrderedAddress()
+                    {
+                        Id = 1,
+                        Street = "Im Waldweg 3",
+                        Zip = "77974",
+                        City = "Meißenheim"
+                    });
             });
 
             modelBuilder.Entity<OrderedCustomer>(entity =>
@@ -309,6 +395,14 @@ namespace Blob_API.Model
                     .HasForeignKey(d => d.OrderedAddressId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_OrdAdd");
+
+                entity.HasData(new OrderedCustomer()
+                {
+                    Id = 1,
+                    Firstname = "Philipp",
+                    Lastname = "Heim",
+                    OrderedAddressId = 1
+                });
             });
 
             modelBuilder.Entity<OrderedProduct>(entity =>
@@ -343,6 +437,16 @@ namespace Blob_API.Model
                     .HasForeignKey(d => d.ProductId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_ProdOrg");
+
+                entity.HasData(
+                    new OrderedProduct() 
+                    {
+                        Id = 1,
+                        Name = "Yokohama Sommerreifen",
+                        Price = 250,
+                        Sku = "110132751",
+                        ProductId = 1
+                    });
             });
 
             modelBuilder.Entity<OrderedProductOrder>(entity =>
@@ -372,6 +476,14 @@ namespace Blob_API.Model
                     .HasForeignKey(d => d.OrderedProductId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_OrdPro");
+
+                entity.HasData(
+                    new OrderedProductOrder() 
+                    { 
+                        OrderedProductId = 1,
+                        OrderId = 1,
+                        Quantity = 4
+                    });
             });
 
             modelBuilder.Entity<Product>(entity =>
@@ -397,6 +509,16 @@ namespace Blob_API.Model
                     .HasDefaultValueSql("'NO SKU DEFINED'")
                     .HasCharSet("utf8mb4")
                     .HasCollation("utf8mb4_general_ci");
+
+                entity.HasData(
+                    new Product()
+                    {
+                        Id = 1,
+                        Name = "Yokohama Sommerreifen",
+                        Price = 250,
+                        Sku = "110132751",
+                        CreatedAt = DateTime.Parse("2020-05-12 21:32:43")
+                    });
             });
 
             modelBuilder.Entity<ProductProperty>(entity =>
@@ -424,6 +546,13 @@ namespace Blob_API.Model
                     .HasForeignKey(d => d.PropertyId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Prop");
+
+                entity.HasData(
+                    new ProductProperty()
+                    {
+                        ProductId = 1,
+                        PropertyId = 1
+                    });
             });
 
             modelBuilder.Entity<Property>(entity =>
@@ -449,6 +578,14 @@ namespace Blob_API.Model
                     .HasDefaultValueSql("''")
                     .HasCharSet("utf8mb4")
                     .HasCollation("utf8mb4_general_ci");
+
+                entity.HasData(
+                    new Property()
+                    {
+                        Id = 1,
+                        Name = "Größe",
+                        Value = "205/50 R17"
+                    });
             });
 
             modelBuilder.Entity<State>(entity =>
@@ -467,6 +604,28 @@ namespace Blob_API.Model
                     .HasDefaultValueSql("''")
                     .HasCharSet("utf8mb4")
                     .HasCollation("utf8mb4_general_ci");
+
+                entity.HasData(
+                    new State()
+                    {
+                        Id = 1,
+                        Value = "Erstellt"
+                    },
+                    new State()
+                    {
+                        Id = 2,
+                        Value = "In Bearbeitung"
+                    },
+                    new State()
+                    {
+                        Id = 3,
+                        Value = "Versand"
+                    },
+                    new State()
+                    {
+                        Id = 4,
+                        Value = "Archiviert"
+                    });
             });
 
             OnModelCreatingPartial(modelBuilder);

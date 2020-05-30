@@ -1,17 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using AutoMapper;
 using Blob_API.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 
 namespace Blob_API
 {
@@ -30,7 +25,17 @@ namespace Blob_API
             // Datenbank Kontext anlegen
             services.AddDbContext<BlobContext>(opt =>
             {
-                opt.UseMySql("server=176.31.26.11;database=Blob;user=remote_db;password=remote2251;sslmode=None;connection timeout=300;default command timeout=300");
+                opt.UseLazyLoadingProxies();
+                opt.UseMySql(Configuration.GetConnectionString("BlobContext"));
+            });
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy("ng",
+                builder =>
+                {
+                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200");
+                });
             });
 
             // NewtonsoftJson nutzen und konfigurieren
@@ -39,6 +44,15 @@ namespace Blob_API
                 {
                     opt.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
                 });
+
+            // Automapper wird dazu verwendent, um unsere DTO-Object zu einem Ressource-Objct zu mappen ohne uns selbst um die zuordnung der Properties zu kümmern.
+            services.AddAutoMapper(typeof(Startup));
+
+            // Register the Swagger generator, defining 1 or more Swagger documents
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Blob API", Version = "v1" });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -51,7 +65,19 @@ namespace Blob_API
 
             app.UseHttpsRedirection();
 
+            // Enable middleware to serve generated Swagger as a JSON endpoint.
+            app.UseSwagger();
+
+            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
+            // specifying the Swagger JSON endpoint.
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blob API v1");
+            });
+
             app.UseRouting();
+
+            app.UseCors("ng");
 
             app.UseAuthorization();
 
