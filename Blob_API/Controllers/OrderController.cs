@@ -243,7 +243,13 @@ namespace Blob_API.Controllers
                     // Add "ghost/copy/backup"-Product if no entry exists.
                     uint orderedProductId = 0;
                     OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).FirstOrDefault();
-                    if ((orderedProductId = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).FirstOrDefault().Id) == 0)
+
+                    if (ordProd != null)
+                    {
+                        orderedProductId = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).FirstOrDefault().Id;
+                    }
+
+                    if (orderedProductId == 0)
                     {
                         // TODO: Check values, sanitize.
                         ordProd = new OrderedProduct()
