@@ -104,6 +104,10 @@ namespace Blob_API.Controllers
                     }
                     else
                     {
+                        if (address.Street != customerRessource.Address.Street)
+                        {
+                            address.Street = customerRessource.Address.Street;
+                        }
                         if (address.Location != customerRessource.Address.Location)
                         {
                             address.Location = customerRessource.Address.Location;
