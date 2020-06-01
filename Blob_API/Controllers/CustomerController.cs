@@ -122,6 +122,8 @@ namespace Blob_API.Controllers
                         }
                     }
 
+
+
                     var orderToUpdate = _context.Order.Find(customerRessource.Id);
 
 
@@ -172,6 +174,7 @@ namespace Blob_API.Controllers
                     Firstname = customerRessource.Firstname,
                     Lastname = customerRessource.Lastname,
                     Address = customerRessource.Address,
+                    AddressId = customerRessource.Address.Id,
 
                 };
 
@@ -180,6 +183,8 @@ namespace Blob_API.Controllers
                 await TryContextSaveAsync();
 
                 await transaction.CommitAsync();
+
+
                 return CreatedAtAction(nameof(GetCustomerAsync), new { id = newCustomer.Id }, newCustomer);
             }
         }
