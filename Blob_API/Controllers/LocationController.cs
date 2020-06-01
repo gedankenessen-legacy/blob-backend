@@ -11,6 +11,7 @@ using AutoMapper;
 using Blob_API.RessourceModels;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.CodeAnalysis;
+using Location = Blob_API.Model.Location;
 
 namespace Blob_API.Controllers
 {
@@ -31,33 +32,219 @@ namespace Blob_API.Controllers
 
 
         // GET api/Locations
+
         [HttpGet]
         [ProducesResponseType(200)]
-        public async Task<ActionResult<IEnumerable<Model.Location>>> GetLocationsAsync()
+        public async Task<ActionResult<IEnumerable<LocationRessource>>> GetAllProducts()
         {
-
             var locationList = await _context.Location.ToListAsync();
-            return Ok(locationList);
 
+            IEnumerable<LocationRessource> locationRessourcesList = _mapper.Map<IEnumerable<LocationRessource>>(locationList);
+
+            return Ok(locationRessourcesList);
         }
 
-        // GET: api/Locations/5
         [HttpGet("{id}")]
-        [ActionName(nameof(GetCustomerAsync))]
-        [ProducesResponseType(204)]
+        [ActionName(nameof(GetLocationAsync))]
+        [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<Order>> GetCustomerAsync(uint id)
+        public async Task<ActionResult<LocationRessource>> GetLocationAsync(uint id)
         {
             var location = await _context.Location.FindAsync(id);
 
             if (location == null)
             {
-                return NotFound();
+                return NotFound("One or more objects did not exist in the Database, Id was not found.");
             }
 
-            return Ok(location);
+            var locationRessource = _mapper.Map<LocationRessource>(location);
+
+            return Ok(locationRessource);
         }
 
-        
+        [HttpPut]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> PutProductAsync([FromBody] IEnumerable<LocationRessource> locationRessources)
+        {
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+
+                foreach (var locationRessource in locationRessources)
+                {
+                    if (!LocationExists(locationRessource.Id))
+                    {
+                        return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                    }
+
+                    var locationToUpdate = _context.Location.Find(locationRessource.Id);
+
+                    if (locationToUpdate.Name != null)
+                    {
+                        locationToUpdate.Name = locationRessource.Name;
+                    }
+
+                    await AddAddressToLocation(locationToUpdate, locationRessource);
+
+                }
+
+                await TryContextSaveAsync();
+                await transaction.CommitAsync();
+
+                return NoContent();
+            }
+        }
+
+        [HttpPost]
+        [ProducesResponseType(201)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<LocationRessource>> PostLocationAsync(LocationRessource locationRessource)
+        {
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                if (locationRessource.Name == null)
+                {
+                    return Problem("Die Location muss ein Name haben!", statusCode: 404, title: "User Error");
+                }
+
+               
+
+                var newLocation = new Location()
+                {
+                    Name = locationRessource.Name
+                };
+
+                await _context.Location.AddAsync(newLocation);
+
+                await AddAddressToLocation(newLocation, locationRessource);
+                await TryContextSaveAsync();
+                await transaction.CommitAsync();
+
+                return CreatedAtAction(nameof(GetLocationAsync), new { id = newLocation.Id }, newLocation);
+            }
+        }
+
+        [HttpDelete("{id}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> DeleteLocation(uint id)
+        {
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                if (!LocationExists(id))
+                {
+                    return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                }
+
+                var locationToDelete = _context.Location.Find(id);
+
+                if (locationToDelete.LocationProduct.Count != 0)
+                {
+                    return BadRequest(
+                        "Es darf kein Produkt mehr an diesem Standort vorhanden sein bevor es gelöscht werden kann");
+                }
+
+                _context.Location.Remove(locationToDelete);
+                
+                await TryContextSaveAsync();
+                await transaction.CommitAsync();
+
+                return NoContent();
+            }
+        }
+
+        private bool LocationExists(uint id)
+        {
+            return _context.Location.Any(e => e.Id == id);
+        }
+
+        private async Task<ActionResult> TryContextSaveAsync()
+        {
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException e)
+            {
+                _logger.LogError("DbUpdateConcurrencyException", e);
+                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError("Exception", exp);
+                return Problem("Could not save to Database", statusCode: 500, title: "Error");
+            }
+
+            return StatusCode(500);
+        }
+
+        private async Task<ActionResult> AddAddressToLocation(Location location, LocationRessource locationRessource)
+        {
+            var address = _context.Address.Find(locationRessource.AddressId);
+
+            //Falls Adresse nicht existiert: Erstelle Adresse 
+            if (address == null)
+            {
+                var addressRessorce = locationRessource.Address;
+
+                if (addressRessorce == null)
+                {
+                    return BadRequest("Die Adresse existiert nicht, bitte erstellen Sie eine Adresse mit valieden Daten");
+                }
+
+                if (addressRessorce.Street == null)
+                {
+                    return BadRequest("Eine Adresse muss in einer Straße sein");
+                }
+
+                if (addressRessorce.City == null)
+                {
+                    return BadRequest("Eine Adresse muss in einer Stadt sein");
+                }
+
+                if (addressRessorce.Zip == null)
+                {
+                    return BadRequest("Eine Adresse muss eine PLZ haben");
+                }
+
+                var newAddress = new Address()
+                {
+                    Street = addressRessorce.Street,
+                    City = addressRessorce.City,
+                    Zip = addressRessorce.Zip
+                };
+
+                await _context.Address.AddAsync(newAddress);
+
+                location.Address = newAddress;
+            }
+            else
+            {
+                var addressRessorce = locationRessource.Address;
+
+                if (addressRessorce.Street != null)
+                {
+                    location.Address.Street = addressRessorce.Street;
+                }
+
+                if (addressRessorce.City != null)
+                {
+                    location.Address.City = addressRessorce.City;
+                }
+
+                if (addressRessorce.Zip != null)
+                {
+                    location.Address.Zip = addressRessorce.Zip; 
+                }
+
+                location.AddressId = locationRessource.AddressId;
+            }
+
+            location.AddressId = locationRessource.AddressId;
+            return NoContent();
+        }
+    }
 }
