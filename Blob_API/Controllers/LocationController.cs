@@ -12,6 +12,7 @@ using Blob_API.RessourceModels;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.CodeAnalysis;
 using Location = Blob_API.Model.Location;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace Blob_API.Controllers
 {
@@ -86,7 +87,67 @@ namespace Blob_API.Controllers
                         locationToUpdate.Name = locationRessource.Name;
                     }
 
-                    await AddAddressToLocation(locationToUpdate, locationRessource);
+                    var address = _context.Address.Find(locationRessource.AddressId);
+
+                    //Falls Adresse nicht existiert: Erstelle Adresse 
+                    if (address == null)
+                    {
+                        var addressRessorce = locationRessource.Address;
+
+                        if (addressRessorce == null)
+                        {
+                            return BadRequest("Die Adresse existiert nicht, bitte erstellen Sie eine Adresse mit validen Daten");
+                        }
+
+                        if (addressRessorce.Street == null)
+                        {
+                            return BadRequest("Eine Adresse muss in einer Straße sein");
+                        }
+
+                        if (addressRessorce.City == null)
+                        {
+                            return BadRequest("Eine Adresse muss in einer Stadt sein");
+                        }
+
+                        if (addressRessorce.Zip == null)
+                        {
+                            return BadRequest("Eine Adresse muss eine PLZ haben");
+                        }
+
+                        var newAddress = new Address()
+                        {
+                            Street = addressRessorce.Street,
+                            City = addressRessorce.City,
+                            Zip = addressRessorce.Zip
+                        };
+
+                        await _context.Address.AddAsync(newAddress);
+
+                        locationToUpdate.Address = newAddress;
+                    }
+                    else
+                    {
+                        var addressRessorce = locationRessource.Address;
+
+                        if (addressRessorce.Street != null)
+                        {
+                            locationToUpdate.Address.Street = addressRessorce.Street;
+                        }
+
+                        if (addressRessorce.City != null)
+                        {
+                            locationToUpdate.Address.City = addressRessorce.City;
+                        }
+
+                        if (addressRessorce.Zip != null)
+                        {
+                            locationToUpdate.Address.Zip = addressRessorce.Zip;
+                        }
+
+                        locationToUpdate.AddressId = locationRessource.AddressId;
+                    }
+
+                    locationToUpdate.AddressId = locationRessource.AddressId;
 
                 }
 
@@ -119,7 +180,67 @@ namespace Blob_API.Controllers
 
                 await _context.Location.AddAsync(newLocation);
 
-                await AddAddressToLocation(newLocation, locationRessource);
+                var address = _context.Address.Find(locationRessource.AddressId);
+
+                //Falls Adresse nicht existiert: Erstelle Adresse 
+                if (address == null)
+                {
+                    var addressRessorce = locationRessource.Address;
+
+                    if (addressRessorce == null)
+                    {
+                        return BadRequest("Die Adresse existiert nicht, bitte erstellen Sie eine Adresse mit validen Daten");
+                    }
+
+                    if (addressRessorce.Street == null)
+                    {
+                        return BadRequest("Eine Adresse muss in einer Straße sein");
+                    }
+
+                    if (addressRessorce.City == null)
+                    {
+                        return BadRequest("Eine Adresse muss in einer Stadt sein");
+                    }
+
+                    if (addressRessorce.Zip == null)
+                    {
+                        return BadRequest("Eine Adresse muss eine PLZ haben");
+                    }
+
+                    var newAddress = new Address()
+                    {
+                        Street = addressRessorce.Street,
+                        City = addressRessorce.City,
+                        Zip = addressRessorce.Zip
+                    };
+
+                    await _context.Address.AddAsync(newAddress);
+
+                    locationRessource.Address = newAddress;
+                }
+                else
+                {
+                    var addressRessorce = locationRessource.Address;
+
+                    if (addressRessorce.Street != null)
+                    {
+                        newLocation.Address.Street = addressRessorce.Street;
+                    }
+
+                    if (addressRessorce.City != null)
+                    {
+                        newLocation.Address.City = addressRessorce.City;
+                    }
+
+                    if (addressRessorce.Zip != null)
+                    {
+                        newLocation.Address.Zip = addressRessorce.Zip;
+                    }
+
+                    newLocation.AddressId = locationRessource.AddressId;
+                }
+
+                newLocation.AddressId = locationRessource.AddressId;
                 await TryContextSaveAsync();
                 await transaction.CommitAsync();
 
@@ -179,72 +300,6 @@ namespace Blob_API.Controllers
             }
 
             return StatusCode(500);
-        }
-
-        private async Task<ActionResult> AddAddressToLocation(Location location, LocationRessource locationRessource)
-        {
-            var address = _context.Address.Find(locationRessource.AddressId);
-
-            //Falls Adresse nicht existiert: Erstelle Adresse 
-            if (address == null)
-            {
-                var addressRessorce = locationRessource.Address;
-
-                if (addressRessorce == null)
-                {
-                    return BadRequest("Die Adresse existiert nicht, bitte erstellen Sie eine Adresse mit valieden Daten");
-                }
-
-                if (addressRessorce.Street == null)
-                {
-                    return BadRequest("Eine Adresse muss in einer Straße sein");
-                }
-
-                if (addressRessorce.City == null)
-                {
-                    return BadRequest("Eine Adresse muss in einer Stadt sein");
-                }
-
-                if (addressRessorce.Zip == null)
-                {
-                    return BadRequest("Eine Adresse muss eine PLZ haben");
-                }
-
-                var newAddress = new Address()
-                {
-                    Street = addressRessorce.Street,
-                    City = addressRessorce.City,
-                    Zip = addressRessorce.Zip
-                };
-
-                await _context.Address.AddAsync(newAddress);
-
-                location.Address = newAddress;
-            }
-            else
-            {
-                var addressRessorce = locationRessource.Address;
-
-                if (addressRessorce.Street != null)
-                {
-                    location.Address.Street = addressRessorce.Street;
-                }
-
-                if (addressRessorce.City != null)
-                {
-                    location.Address.City = addressRessorce.City;
-                }
-
-                if (addressRessorce.Zip != null)
-                {
-                    location.Address.Zip = addressRessorce.Zip; 
-                }
-
-                location.AddressId = locationRessource.AddressId;
-            }
-
-            location.AddressId = locationRessource.AddressId;
-            return NoContent();
         }
     }
 }
