@@ -124,7 +124,18 @@ namespace Blob_API.Controllers
 
 
 
-                    var orderToUpdate = _context.Order.Find(customerRessource.Id);
+                    var customerToUpdate = _context.Customer.Find(customerRessource.Id);
+
+                    if (customerToUpdate.Firstname != customerRessource.Firstname)
+                    {
+                        customerToUpdate.Firstname = customerRessource.Firstname;
+                    }
+
+                    if (customerToUpdate.Lastname != customerRessource.Lastname)
+                    {
+                        customerToUpdate.Firstname = customerRessource.Firstname;
+                    }
+
 
 
 
@@ -195,15 +206,21 @@ namespace Blob_API.Controllers
         [ProducesResponseType(404)]
         public async Task<ActionResult<Order>> DeleteCustomerAsync(uint id)
         {
-            var customer = await _context.Customer.FindAsync(id);
-            if (customer == null)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                return NotFound();
-            }
-            _context.Customer.Remove(customer);
+                var customer = await _context.Customer.FindAsync(id);
+                if (customer == null)
+                {
+                    return NotFound();
+                }
+                _context.Customer.Remove(customer);
 
-            return NoContent();
-               
+                await TryContextSaveAsync();
+
+                await transaction.CommitAsync();
+
+                return NoContent();
+            } 
            
         }
 
