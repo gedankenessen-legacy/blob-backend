@@ -94,29 +94,54 @@ namespace Blob_API.Controllers
                         return BadRequest("Dem Produkt muss mindestens einen Standort zugewissen sein");
                     }
 
+                    int error = 0;
                     //TODO Update Stock
                     DeleteProductProperty(productToUpdate);
                     await TryContextSaveAsync();
                     if (productRessource.Properties != null)
                     {
-                        await AddPropertyToProduct(productToUpdate, productRessource);
+                       error = await AddPropertyToProduct(productToUpdate, productRessource);
+
+                       if (error == -1)
+                       {
+                           return BadRequest("Der Property muss ein Name zugewissen sein!");
+                       }
+
+                       if (error == -2)
+                       {
+                           return BadRequest("Der Property muss ein Value zugewissen sein!");
+                       }
                     }
 
                     DeleteProductCategory(productToUpdate);
                     await TryContextSaveAsync();
                     if (productRessource.Categories != null)
                     {
-                        await AddCategoryToProduct(productToUpdate, productRessource);
+                       error = await AddCategoryToProduct(productToUpdate, productRessource);
+
+                       if (error == -1)
+                       {
+                           return BadRequest("Der Kategorie muss ein Name zugewissen sein!");
+                       }
                     }
 
                     DeleteProductLocation(productToUpdate);
                     await TryContextSaveAsync();
                     if (productRessource.ProductsAtLocations != null)
                     {
-                        await AddLocationToProduct(productToUpdate, productRessource);
+                       error = await AddLocationToProduct(productToUpdate, productRessource);
+
+                       if (error == -1)
+                       {
+                           return BadRequest("Der Standort existiert nicht");
+                       }
+
+
+                       if (error == -2)
+                       {
+                           return BadRequest("Die Anzahl darf nicht kleiner 0 sein!");
+                       }
                     }
-                   
-                   
                 }
 
                 await TryContextSaveAsync();
@@ -128,6 +153,7 @@ namespace Blob_API.Controllers
 
         [HttpPost]
         [ProducesResponseType(201)]
+        [ProducesResponseType(404)]
         [ProducesResponseType(500)]
         public async Task<ActionResult<ProductRessource>> PostProductAsync(ProductRessource productRessource)
         {
@@ -161,19 +187,47 @@ namespace Blob_API.Controllers
 
                 await _context.Product.AddAsync(newProduct);
 
+                int error = 0;
+
                 if (productRessource.Properties != null)
                 {
-                    await AddPropertyToProduct(newProduct, productRessource);
+                   error = await AddPropertyToProduct(newProduct, productRessource);
+
+                    if (error == -1)
+                    {
+                        return BadRequest("Der Property muss ein Name zugewissen sein!");
+                    }
+
+                    if (error == -2)
+                    {
+                        return BadRequest("Der Property muss ein Value zugewissen sein!");
+                    }
                 }
 
                 if (productRessource.Categories != null)
                 {
-                    await AddCategoryToProduct(newProduct, productRessource);
+                    error = await AddCategoryToProduct(newProduct, productRessource);
+
+                    if (error == -1)
+                    {
+                        return BadRequest("Der Kategorie muss ein Name zugewissen sein!");
+                    }
                 }
 
                 if (productRessource.ProductsAtLocations != null)
                 {
-                    await AddLocationToProduct(newProduct, productRessource);
+                    error = await AddLocationToProduct(newProduct, productRessource);
+
+                    if (error == -1)
+                    {
+                        return BadRequest("Der Standort existiert nicht");
+                    }
+
+
+                    if (error == -2)
+                    {
+                        return BadRequest("Die Anzahl darf nicht kleiner 0 sein!");
+                    }
                 }
 
                 await TryContextSaveAsync();
@@ -320,7 +374,7 @@ namespace Blob_API.Controllers
             }
         }
 
-        private async Task<ActionResult> AddPropertyToProduct(Product product, ProductRessource productRessource)
+        private async Task<int> AddPropertyToProduct(Product product, ProductRessource productRessource)
         {
             foreach (var productProperty in productRessource.Properties)
             {
@@ -333,12 +387,12 @@ namespace Blob_API.Controllers
                     //Bei der Erstellung einer Property müssen Name und Value angegeben werden.
                     if (productProperty.Name == null)
                     {
-                        return BadRequest();
+                        return -1;
                     }
 
                     if (productProperty.Value == null)
                     {
-                        return BadRequest();
+                        return -2;
                     }
 
                     //Neue Property erstellen 
@@ -371,10 +425,10 @@ namespace Blob_API.Controllers
                 }
             }
 
-            return NoContent();
+            return 0;
         }
 
-        private async Task<ActionResult> AddCategoryToProduct(Product product, ProductRessource productRessource)
+        private async Task<int> AddCategoryToProduct(Product product, ProductRessource productRessource)
         {
             foreach (var productCategory in productRessource.Categories)
             {
@@ -385,7 +439,7 @@ namespace Blob_API.Controllers
 
                     if (productCategory.Name == null)
                     {
-                        return BadRequest();
+                        return -1;
                     }
 
                     var newCategory = new Category()
@@ -408,10 +462,10 @@ namespace Blob_API.Controllers
                 }
             }
 
-            return NoContent();
+            return 0;
         }
 
-        private async Task<ActionResult> AddLocationToProduct(Product product, ProductRessource productRessource)
+        private async Task<int> AddLocationToProduct(Product product, ProductRessource productRessource)
         {
             foreach (var productLocation in productRessource.ProductsAtLocations)
             {
@@ -420,12 +474,12 @@ namespace Blob_API.Controllers
 
                 if (location == null)
                 {
-                    return BadRequest("Die angegeben Location existiert nicht!");
+                    return -1;
                 }
 
                 if (productLocation.Quantity < 0)
                 {
-                    return BadRequest("The Anzahl can not be under 0 ");
+                    return -2;
                 }
 
                 await _context.LocationProduct.AddAsync(new LocationProduct()
@@ -436,7 +490,7 @@ namespace Blob_API.Controllers
                 });
             }
 
-            return NoContent();
+            return 0;
         }
     }
 }
