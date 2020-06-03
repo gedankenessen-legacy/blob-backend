@@ -17,6 +17,6 @@ namespace Blob_API.RessourceModels
        
         public virtual Address Address { get; set; }
        
-        public virtual ICollection<LocationProduct> LocationProduct { get; set; }
+        //public virtual ICollection<LocationProduct> LocationProduct { get; set; }
     }
 }
