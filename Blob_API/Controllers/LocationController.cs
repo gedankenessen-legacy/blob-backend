@@ -129,26 +129,26 @@ namespace Blob_API.Controllers
                     {
                         var addressRessorce = locationRessource.Address;
 
-                        if (addressRessorce.Street != null)
+                        if (addressRessorce != null)
                         {
-                            locationToUpdate.Address.Street = addressRessorce.Street;
-                        }
+                            if (addressRessorce.Street != null)
+                            {
+                                locationToUpdate.Address.Street = addressRessorce.Street;
+                            }
 
-                        if (addressRessorce.City != null)
-                        {
-                            locationToUpdate.Address.City = addressRessorce.City;
-                        }
+                            if (addressRessorce.City != null)
+                            {
+                                locationToUpdate.Address.City = addressRessorce.City;
+                            }
 
-                        if (addressRessorce.Zip != null)
-                        {
-                            locationToUpdate.Address.Zip = addressRessorce.Zip;
+                            if (addressRessorce.Zip != null)
+                            {
+                                locationToUpdate.Address.Zip = addressRessorce.Zip;
+                            }
                         }
 
                         locationToUpdate.AddressId = locationRessource.AddressId;
                     }
-
-                    locationToUpdate.AddressId = locationRessource.AddressId;
-
                 }
 
                 await TryContextSaveAsync();
@@ -222,20 +222,24 @@ namespace Blob_API.Controllers
                 {
                     var addressRessorce = locationRessource.Address;
 
-                    if (addressRessorce.Street != null)
+                    if (addressRessorce != null)
                     {
-                        newLocation.Address.Street = addressRessorce.Street;
-                    }
+                        if (addressRessorce.Street != null)
+                        {
+                            newLocation.Address.Street = addressRessorce.Street;
+                        }
 
-                    if (addressRessorce.City != null)
-                    {
-                        newLocation.Address.City = addressRessorce.City;
-                    }
+                        if (addressRessorce.City != null)
+                        {
+                            newLocation.Address.City = addressRessorce.City;
+                        }
 
-                    if (addressRessorce.Zip != null)
-                    {
-                        newLocation.Address.Zip = addressRessorce.Zip;
+                        if (addressRessorce.Zip != null)
+                        {
+                            newLocation.Address.Zip = addressRessorce.Zip;
+                        }
                     }
+                    
 
                     newLocation.AddressId = locationRessource.AddressId;
                 }
