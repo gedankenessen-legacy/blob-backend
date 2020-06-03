@@ -1,27 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Text.Json.Serialization;
+using Blob_API.Model;
 
-namespace Blob_API.Model
+namespace Blob_API.RessourceModels
 {
-    [DataContract]
-    public partial class Location
+    public class LocationRessource
     {
-        public Location()
+        public LocationRessource()
         {
-            LocationProduct = new HashSet<LocationProduct>();
         }
 
-        [DataMember]
         public uint Id { get; set; }
-        [DataMember]
         public string Name { get; set; }
-        [DataMember]
+        
         public uint AddressId { get; set; }
-        [JsonIgnore]
+       
         public virtual Address Address { get; set; }
-        [JsonIgnore]
+       
         public virtual ICollection<LocationProduct> LocationProduct { get; set; }
     }
 }
