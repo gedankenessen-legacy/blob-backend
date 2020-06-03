@@ -7,30 +7,43 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blob_API.Model;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authorization;
+using OpenIddict.Validation;
+using AutoMapper;
+using Blob_API.RessourceModels;
+using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.CodeAnalysis;
 
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
+    //[Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class CustomerController : ControllerBase
     {
         private readonly BlobContext _context;
         private readonly ILogger<CustomerController> _logger;
+        private readonly IMapper _mapper;
 
-        public CustomerController(BlobContext context, ILogger<CustomerController> logger)
+        public CustomerController(BlobContext context, ILogger<CustomerController> logger, IMapper mapper)
         {
             _context = context;
             _logger = logger;
+            _mapper = mapper;
         }
 
 
         // GET api/Customers
         [HttpGet]
         [ProducesResponseType(200)]
-        [ProducesResponseType(500)]
         public async Task<ActionResult<IEnumerable<Customer>>> GetCustomersAsync()
         {
-            return Ok(await _context.Customer.ToListAsync());
+            var customerList = await _context.Customer.ToListAsync();
+
+            IEnumerable<CustomerRessource> customerRessourceList = _mapper.Map<IEnumerable<CustomerRessource>>(customerList);
+
+            return Ok(customerRessourceList);
+
         }
 
         // GET: api/Customers/5
@@ -48,7 +61,10 @@ namespace Blob_API.Controllers
                 return NotFound();
             }
 
-            return Ok(customer);
+
+            var customerRessource = _mapper.Map<CustomerRessource>(customer);
+
+            return Ok(customerRessource);
         }
 
         // PUT: api/Customers
@@ -57,49 +73,68 @@ namespace Blob_API.Controllers
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> PutCustomerAsync([FromBody] IEnumerable<Customer> customersToUpdate)
+        public async Task<IActionResult> PutCustomerAsync([FromBody] IEnumerable<CustomerRessource> customerRessources)
         {
             // TODO: check/validate/sanitize values.
 
-
-
-            foreach (var customerToUpdate in customersToUpdate)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                if (customerToUpdate.Firstname == null) 
+
+                foreach (var customerRessource in customerRessources)
                 {
-                    return BadRequest("First name cannot be null.");
+                    if (customerRessource.Firstname == null)
+                    {
+                        return BadRequest("First name cannot be null.");
+                    }
+
+                    if (customerRessource.Lastname == null)
+                    {
+                        return BadRequest("Last name cannot be null.");
+                    }
+
+                    if (!CustomerExists(customerRessource.Id))
+                    {
+                        return NotFound("One or more objects did not exist in the Database, Id was not found.");
+                    }
+                    Address address = _context.Address.Find(customerRessource.Address.Id);
+
+                    //Neue Adresse kreieren, falls sie noch nicht existiert
+                    if (address == null)
+                    {
+                        Address newAddress = customerRessource.Address;
+
+                        await _context.Address.AddAsync(newAddress);
+                    }
+                    else
+                    {
+                        if (address.Location != customerRessource.Address.Location)
+                        {
+                            address.Location = customerRessource.Address.Location;
+                        }
+                        if (address.Zip != customerRessource.Address.Zip)
+                        {
+                            address.Zip = customerRessource.Address.Zip;
+                        }
+                        if (address.City != customerRessource.Address.City)
+                        {
+                            address.City = customerRessource.Address.City;
+                        }
+                    }
+
+                    var orderToUpdate = _context.Order.Find(customerRessource.Id);
+
+
+
+                    // Update customer and set state to Modified. 
+                    //_context.Entry(customerRessource).State = EntityState.Modified;
                 }
 
-                if (customerToUpdate.Lastname == null)
-                {
-                    return BadRequest("Last name cannot be null.");
-                }
+                await TryContextSaveAsync();
+                await transaction.CommitAsync();
 
-                if (!CustomerExists(customerToUpdate.Id))
-                {
-                    return NotFound("One or more objects did not exist in the Database, Id was not found.");
-                }
-
-                // Update customer and set state to Modified. 
-                _context.Entry(customerToUpdate).State = EntityState.Modified;
+                return NoContent();
             }
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException e)
-            {
-                _logger.LogError("DbUpdateConcurrencyException", e);
-                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
-            }
-            catch (Exception exp)
-            {
-                _logger.LogError("Exception", exp);
-                return Problem("Could not save changes to Database", statusCode: 500, title: "Persistence Error");
-            }
-
-            return NoContent();
         }
 
         // POST: api/Customers
@@ -107,21 +142,79 @@ namespace Blob_API.Controllers
         [ProducesResponseType(201)]
         [ProducesResponseType(400)]
         [ProducesResponseType(500)]
-        public async Task<ActionResult<Customer>> PostOrderAsync(Customer customer)
+        public async Task<ActionResult<Customer>> PostOrderAsync(CustomerRessource customerRessource)
         {
             // TODO: check/validate/sanitize values.
-
-            if (customer.Firstname == null)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                return BadRequest("First name cannot be null.");
-            }
+                if (customerRessource.Firstname == null)
+                {
+                    return BadRequest("First name cannot be null.");
+                }
 
-            if (customer.Lastname == null)
+                if (customerRessource.Lastname == null)
+                {
+                    return BadRequest("Last name cannot be null.");
+                }
+
+                Address address = _context.Address.Find(customerRessource.Address.Id);
+                if (address == null)
+                {
+                    Address newAddress = customerRessource.Address;
+
+                    await _context.Address.AddAsync(newAddress);
+                }
+
+                Customer newCustomer = new Customer
+                {
+                    CreatedAt = DateTime.Now.ToUniversalTime(),
+                    Firstname = customerRessource.Firstname,
+                    Lastname = customerRessource.Lastname,
+                    Address = customerRessource.Address,
+
+                };
+
+                await _context.Customer.AddAsync(newCustomer);
+
+                await TryContextSaveAsync();
+
+                await transaction.CommitAsync();
+                return CreatedAtAction(nameof(GetCustomerAsync), new { id = newCustomer.Id }, newCustomer);
+            }
+        }
+
+        // DELETE: api/Customers/5
+        [HttpDelete("{id}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<Order>> DeleteCustomerAsync(uint id)
+        {
+            var customer = await _context.Customer.FindAsync(id);
+            if (customer == null)
             {
-                return BadRequest("Last name cannot be null.");
+                return NotFound();
             }
+            _context.Customer.Remove(customer);
 
-            _context.Customer.Add(customer);
+            return NoContent();
+               
+           
+        }
+
+
+
+        private bool CustomerExists(uint id)
+        {
+            return _context.Customer.Any(e => e.Id == id);
+        }
+
+        private bool AdressExists(Address adress)
+        {
+            return _context.Address.Any(e => e.Id == adress.Id);
+        }
+
+        private async Task<ActionResult> TryContextSaveAsync()
+        {
             try
             {
                 await _context.SaveChangesAsync();
@@ -134,16 +227,10 @@ namespace Blob_API.Controllers
             catch (Exception exp)
             {
                 _logger.LogError("Exception", exp);
-                return Problem("Could not save to Database", statusCode: 500, title: "Persistence Error");
+                return Problem("Could not save to Database", statusCode: 500, title: "Error");
             }
 
-            return CreatedAtAction(nameof(GetCustomerAsync), new { id = customer.Id }, customer);
-        }
-
-
-        private bool CustomerExists(uint id)
-        {
-            return _context.Customer.Any(e => e.Id == id);
+            return StatusCode(500);
         }
     }
 }

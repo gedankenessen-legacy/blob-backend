@@ -18,6 +18,7 @@ namespace Blob_API_Tests.Controllers
         // Arrange = Setup
         private readonly OrderController _ordersController;
         private readonly BlobContext _blobContext;
+        private readonly IMapper _mapper;
         private Order newOrder = new Order()
         {
             Id = 1,
@@ -40,6 +41,7 @@ namespace Blob_API_Tests.Controllers
                 cfg.AddProfile(new OrderProfile());
             });
             var mapper = mockMapper.CreateMapper();
+            _mapper = mapper;
 
             SeedDatabase.SeedDatabaseWithDefaultData(_blobContext);
 
@@ -91,7 +93,7 @@ namespace Blob_API_Tests.Controllers
 
 
             // Act = Processing
-            var task = await _ordersController.PutOrderAsync(orders);
+            var task = await _ordersController.PutOrderAsync(_mapper.Map<IEnumerable<OrderRessource>>(orders));
 
             // Assert
             Assert.Equal((uint)2, _blobContext.Order.Find((uint)1).StateId);

@@ -8,10 +8,15 @@ using Blob_API.Model;
 using Microsoft.Extensions.Logging;
 using AutoMapper;
 using Blob_API.RessourceModels;
+using Microsoft.AspNetCore.Authorization;
+using OpenIddict.Validation;
+using System.Security.Cryptography.X509Certificates;
+using System.Runtime.CompilerServices;
 
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
+    //[Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class OrderController : ControllerBase
     {
@@ -86,12 +91,17 @@ namespace Blob_API.Controllers
                         return NotFound($"The State with the ID={orderRessource.State.Id}, was not found in the Database.");
                     }
 
-                    //if (orderRessource.LocationId <= 0)
-                    //{
-                    //    return BadRequest("No location id provided!");
-                    //}
-
                     var orderToUpdate = await _context.Order.FindAsync(orderRessource.Id);
+
+                    // delete old relations, flag entity as deleted.
+                    var listOfOrderedProduct = _context.OrderedProductOrder.ToList();
+                    foreach (var orderedProductOrder in listOfOrderedProduct)
+                    {
+                        if (orderedProductOrder.OrderId == orderRessource.Id)
+                        {
+                            _context.Entry(orderedProductOrder).State = EntityState.Deleted;
+                        }
+                    }
 
                     // Update state
                     orderToUpdate.State = await _context.State.FindAsync(orderRessource.State.Id);
@@ -122,6 +132,13 @@ namespace Blob_API.Controllers
                         else if (ordProdOrd.Quantity != orderedProductRessource.Quantity)
                         {
                             ordProdOrd.Quantity = orderedProductRessource.Quantity;
+                            _context.Entry(ordProdOrd).State = EntityState.Modified;
+                        }
+
+                        // Remove the delete flag if product is in order payload.
+                        if (_context.Entry(ordProdOrd).State == EntityState.Deleted)
+                        {
+                            _context.Entry(ordProdOrd).State = EntityState.Modified;
                         }
 
                         #region Reduce Stock
@@ -174,7 +191,6 @@ namespace Blob_API.Controllers
 
                 // Check if the address already exists.
 
-
                 Address address = _context.Address.Find(customer.Address.Id);
                 if (address == null)
                 {
@@ -182,27 +198,31 @@ namespace Blob_API.Controllers
                 }
 
                 #region Backup Address
-                // Create "ghost/copy/backup"-Address
-                // TODO: var newOrderedAddress =_mapper.Map<OrderedAddress>(address);
-                var backupedAddress = new OrderedAddress()
-                {
-                    Street = address.Street,
-                    Zip = address.Zip,
-                    City = address.City
-                };
+                var backupedAddress = _context.OrderedAddress.Where(x => x.City == address.City && x.Street == address.Street && x.Zip == address.Zip).FirstOrDefault();
 
-                await _context.OrderedAddress.AddAsync(backupedAddress);
+                // Create "ghost/copy/backup"-Address
+                if (backupedAddress == null)
+                {
+                    backupedAddress = _mapper.Map<OrderedAddress>(address);
+                    await _context.OrderedAddress.AddAsync(backupedAddress);
+                }
+
                 #endregion
 
                 #region Backup Customer
+                OrderedCustomer newOrderedCustomer = _context.OrderedCustomer.Where(x => x.Firstname == customer.Firstname && x.Lastname == customer.Lastname && x.OrderedAddressId == backupedAddress.Id).FirstOrDefault();
+
                 // Create "ghost/copy/backup"-Customer
-                OrderedCustomer newOrderedCustomer = new OrderedCustomer()
+                if (newOrderedCustomer == null)
                 {
-                    Firstname = customer.Firstname,
-                    Lastname = customer.Lastname,
-                    OrderedAddress = backupedAddress
-                };
-                await _context.OrderedCustomer.AddAsync(newOrderedCustomer);
+                    newOrderedCustomer = new OrderedCustomer()
+                    {
+                        Firstname = customer.Firstname,
+                        Lastname = customer.Lastname,
+                        OrderedAddress = backupedAddress
+                    };
+                    await _context.OrderedCustomer.AddAsync(newOrderedCustomer);
+                }    
                 #endregion
 
                 // Check if state is provided.
@@ -239,8 +259,14 @@ namespace Blob_API.Controllers
                     #region Backup Product
                     // Add "ghost/copy/backup"-Product if no entry exists.
                     uint orderedProductId = 0;
-                    OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).First();
-                    if ((orderedProductId = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).First().Id) == 0)
+                    OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).FirstOrDefault();
+
+                    if (ordProd != null)
+                    {
+                        orderedProductId = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).FirstOrDefault().Id;
+                    }
+
+                    if (orderedProductId == 0)
                     {
                         // TODO: Check values, sanitize.
                         ordProd = new OrderedProduct()
