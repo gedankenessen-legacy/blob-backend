@@ -87,7 +87,7 @@ namespace Blob_API.Controllers
                         locationToUpdate.Name = locationRessource.Name;
                     }
 
-                    var address = _context.Address.Find(locationRessource.AddressId);
+                    var address = _context.Address.Find(locationRessource.Address.Id);
 
                     //Falls Adresse nicht existiert: Erstelle Adresse 
                     if (address == null)
@@ -147,7 +147,7 @@ namespace Blob_API.Controllers
                             }
                         }
 
-                        locationToUpdate.AddressId = locationRessource.AddressId;
+                        locationToUpdate.AddressId = locationRessource.Address.Id;
                     }
                 }
 
@@ -180,7 +180,7 @@ namespace Blob_API.Controllers
 
                 await _context.Location.AddAsync(newLocation);
 
-                var address = _context.Address.Find(locationRessource.AddressId);
+                var address = _context.Address.Find(locationRessource.Address.Id);
 
                 //Falls Adresse nicht existiert: Erstelle Adresse 
                 if (address == null)
@@ -241,10 +241,10 @@ namespace Blob_API.Controllers
                     }
                     
 
-                    newLocation.AddressId = locationRessource.AddressId;
+                    newLocation.AddressId = locationRessource.Address.Id;
                 }
 
-                newLocation.AddressId = locationRessource.AddressId;
+                newLocation.AddressId = locationRessource.Address.Id;
                 await TryContextSaveAsync();
                 await transaction.CommitAsync();
 
