@@ -41,6 +41,26 @@ namespace Blob_API.Controllers
             return Ok(productRessourcesList);
         }
 
+        [Route("Properties")]
+        [HttpGet]
+        [ProducesResponseType(200)]
+        public async Task<ActionResult<IEnumerable<Property>>> GetAllProperties()
+        {
+            var propertyList = await _context.Property.ToListAsync();
+
+            return Ok(propertyList);
+        }
+
+        [Route("Categories")]
+        [HttpGet]
+        [ProducesResponseType(200)]
+        public async Task<ActionResult<IEnumerable<Category>>> GetAllCategories()
+        {
+            var categoryList = await _context.Category.ToListAsync();
+
+            return Ok(categoryList);
+        }
+
         [HttpGet("{id}")]
         [ActionName(nameof(GetProductAsync))]
         [ProducesResponseType(200)]
