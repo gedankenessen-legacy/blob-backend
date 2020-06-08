@@ -18,7 +18,7 @@ namespace Blob_API.Model
         [DataMember]
         public DateTime? CreatedAt { get; set; }
         [DataMember]
-        public uint CustomerId { get; set; }
+        public uint? CustomerId { get; set; }
         [DataMember]
         public uint OrderedCustomerId { get; set; }
         [DataMember]
