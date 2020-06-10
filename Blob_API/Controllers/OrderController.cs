@@ -164,7 +164,10 @@ namespace Blob_API.Controllers
                     //_context.Entry(orderToUpdate).State = EntityState.Modified;
                 }
 
-                await TryContextSaveAsync();
+                var result = await TryContextSaveAsync();
+                
+                if (result != null) return result;
+
                 await transaction.CommitAsync();
 
                 return NoContent();
@@ -317,7 +320,9 @@ namespace Blob_API.Controllers
                     #endregion
                 }
 
-                await TryContextSaveAsync();
+                var result = await TryContextSaveAsync();
+
+                if (result != null) return result;
 
                 await transaction.CommitAsync();
                 return CreatedAtAction(nameof(GetOrderAsync), new { id = newOrder.Id }, newOrder);
@@ -423,7 +428,7 @@ namespace Blob_API.Controllers
                 return Problem("Could not save to Database", statusCode: 500, title: "Error");
             }
 
-            return StatusCode(500);
+            return null;
         }
     }
 }

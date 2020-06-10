@@ -13,10 +13,10 @@ namespace Blob_API.RessourceModels
         public uint Id { get; set; }
         public string Name { get; set; }
         
-        public uint AddressId { get; set; }
+        //public uint AddressId { get; set; }
        
         public virtual Address Address { get; set; }
        
-        public virtual ICollection<LocationProduct> LocationProduct { get; set; }
+        //public virtual ICollection<LocationProduct> LocationProduct { get; set; }
     }
 }
