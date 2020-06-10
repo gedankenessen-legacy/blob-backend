@@ -151,7 +151,10 @@ namespace Blob_API.Controllers
                     }
                 }
 
-                await TryContextSaveAsync();
+                var result = await TryContextSaveAsync();
+
+                if (result != null) return result;
+
                 await transaction.CommitAsync();
 
                 return NoContent();
@@ -216,7 +219,7 @@ namespace Blob_API.Controllers
 
                     await _context.Address.AddAsync(newAddress);
 
-                    locationRessource.Address = newAddress;
+                    newLocation.Address = newAddress;
                 }
                 else
                 {
@@ -244,8 +247,11 @@ namespace Blob_API.Controllers
                     newLocation.AddressId = locationRessource.Address.Id;
                 }
 
-                newLocation.AddressId = locationRessource.Address.Id;
-                await TryContextSaveAsync();
+
+                var result = await TryContextSaveAsync();
+
+                if (result != null) return result;
+
                 await transaction.CommitAsync();
 
                 return CreatedAtAction(nameof(GetLocationAsync), new { id = newLocation.Id }, newLocation);
@@ -273,8 +279,11 @@ namespace Blob_API.Controllers
                 }
 
                 _context.Location.Remove(locationToDelete);
-                
-                await TryContextSaveAsync();
+
+                var result = await TryContextSaveAsync();
+
+                if (result != null) return result;
+
                 await transaction.CommitAsync();
 
                 return NoContent();
@@ -303,7 +312,7 @@ namespace Blob_API.Controllers
                 return Problem("Could not save to Database", statusCode: 500, title: "Error");
             }
 
-            return StatusCode(500);
+            return null;
         }
     }
 }
