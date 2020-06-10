@@ -120,7 +120,9 @@ namespace Blob_API.Controllers
                     int error = 0;
                     //TODO Update Stock
                     DeleteProductProperty(productToUpdate);
-                    await TryContextSaveAsync();
+                    var result = await TryContextSaveAsync();
+
+                    if (result != null) return result;
                     if (productRessource.Properties != null)
                     {
                        error = await AddPropertyToProduct(productToUpdate, productRessource);
@@ -137,7 +139,9 @@ namespace Blob_API.Controllers
                     }
 
                     DeleteProductCategory(productToUpdate);
-                    await TryContextSaveAsync();
+                    result = await TryContextSaveAsync();
+
+                    if (result != null) return result;
                     if (productRessource.Categories != null)
                     {
                        error = await AddCategoryToProduct(productToUpdate, productRessource);
@@ -149,7 +153,9 @@ namespace Blob_API.Controllers
                     }
 
                     DeleteProductLocation(productToUpdate);
-                    await TryContextSaveAsync();
+                    result = await TryContextSaveAsync();
+
+                    if (result != null) return result;
                     if (productRessource.ProductsAtLocations != null)
                     {
                        error = await AddLocationToProduct(productToUpdate, productRessource);
@@ -167,7 +173,9 @@ namespace Blob_API.Controllers
                     }
                 }
 
-                await TryContextSaveAsync();
+                var result1 = await TryContextSaveAsync();
+
+                if (result1 != null) return result1;
                 await transaction.CommitAsync();
 
                 return NoContent();
@@ -253,7 +261,9 @@ namespace Blob_API.Controllers
                     }
                 }
 
-                await TryContextSaveAsync();
+                var result = await TryContextSaveAsync();
+
+                if (result != null) return result;
                 await transaction.CommitAsync();
 
                 return CreatedAtAction(nameof(GetProductAsync), new {id = newProduct.Id}, newProduct);
@@ -278,11 +288,16 @@ namespace Blob_API.Controllers
                 DeleteProductProperty(productToDelete);
                 DeleteProductCategory(productToDelete);
                 DeleteProductLocation(productToDelete);
-                await TryContextSaveAsync();
+                var result = await TryContextSaveAsync();
+
+                if (result != null) return result;
 
                 _context.Product.Remove(productToDelete);
 
-                await TryContextSaveAsync();
+                result = await TryContextSaveAsync();
+
+                if (result != null) return result;
+
                 await transaction.CommitAsync();
 
                 return NoContent();
@@ -311,7 +326,7 @@ namespace Blob_API.Controllers
                 return Problem("Could not save to Database", statusCode: 500, title: "Error");
             }
 
-            return StatusCode(500);
+            return null;
         }
 
         private async void AddToProductCategoryTable(Product product, Category category)
