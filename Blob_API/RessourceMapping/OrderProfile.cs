@@ -11,6 +11,7 @@ namespace Blob_API.RessourceModels
             // Define the orgin and destination model for the mapping process.
             CreateMap<Order, OrderRessource>()
                 // OrderedProductOrder.OrderedProduct auf OrderedProducts mappen.
+                .ForMember(dest=> dest.Customer, opt => opt.MapFrom(src => src.OrderedCustomer))
                 .ForMember(dest => dest.OrderedProducts, opt => opt.MapFrom(src => src.OrderedProductOrder.Select(x => x.OrderedProduct).ToList()))
                 .ReverseMap();
                     
