@@ -207,6 +207,7 @@ namespace Blob_API.Controllers
                 if (backupedAddress == null)
                 {
                     backupedAddress = _mapper.Map<OrderedAddress>(address);
+                    backupedAddress.Id = 0; // Let EF Core set it from database
                     await _context.OrderedAddress.AddAsync(backupedAddress);
                 }
 
