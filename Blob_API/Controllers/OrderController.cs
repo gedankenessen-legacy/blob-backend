@@ -149,10 +149,46 @@ namespace Blob_API.Controllers
                                 Quantity = orderedProductRessource.Quantity,
                             };
                             await _context.OrderedProductOrder.AddAsync(ordProdOrd);
+
+                            #region Reduce Stock                       
+                            // Reduce the stock of the item on the location with the highest quantity.
+                            var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
+                            if (productsAtLocation == null)
+                            {
+                                return BadRequest($"Not enough quantity for productId: {product.Id}");
+                            }
+
+                            // Check if enough products in stock and reduce.
+                            uint reduced = ReduceStock(orderedProductRessource, productsAtLocation);
+
+                            // still items to be reduced, but nothing in stock.
+                            if (reduced > 0)
+                            {
+                                return BadRequest($"Not enough quantity for productId: {product.Id}");
+                            }
+                            #endregion
                         }
                         else if (ordProdOrd.Quantity != orderedProductRessource.Quantity)
                         {
+                            int delta = (int)ordProdOrd.Quantity - (int)orderedProductRessource.Quantity;
                             ordProdOrd.Quantity = orderedProductRessource.Quantity;
+
+                            // Reduce Stock
+                            if (delta != 0)
+                            {
+                                var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
+                                if (productsAtLocation == null)
+                                {
+                                    return BadRequest($"Not enough quantity for productId: {product.Id}");
+                                }
+
+                                productsAtLocation[0].Quantity += (uint)delta;
+
+                                if (productsAtLocation[0].Quantity < 0)
+                                    return BadRequest($"Not enough quantity for productId: {product.Id}");
+
+                            }
+
                             _context.Entry(ordProdOrd).State = EntityState.Modified;
                         }
 
@@ -160,29 +196,30 @@ namespace Blob_API.Controllers
                         if (_context.Entry(ordProdOrd).State == EntityState.Deleted)
                         {
                             _context.Entry(ordProdOrd).State = EntityState.Modified;
+
+                            
                         }
+                        else
+                        {
+                            //#region Reduce Stock                       
+                            //// Reduce the stock of the item on the location with the highest quantity.
+                            //var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
+                            //if (productsAtLocation == null)
+                            //{
+                            //    return BadRequest($"Not enough quantity for productId: {product.Id}");
+                            //}
 
-                        #region Reduce Stock
-                        //// TODO: What if the quantity of the ordered product quantity is changed? Add/Sub the diff. to the stock...
-                        //// Reduce the stock of the item on the location with the highest quantity.
-                        //var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
-                        //if (productsAtLocation == null)
-                        //{
-                        //    return BadRequest($"Not enough quantity for productId: {product.Id}");
-                        //}
+                            //// Check if enough products in stock and reduce.
+                            //uint reduced = ReduceStock(orderedProductRessource, productsAtLocation);
 
-                        //// Check if enough products in stock and reduce.
-                        //uint reduced = ReduceStock(orderedProductRessource, productsAtLocation);
-
-                        //// still items to be reduced, but nothing in stock.
-                        //if (reduced > 0)
-                        //{
-                        //    return BadRequest($"Not enough quantity for productId: {product.Id}");
-                        //}
-                        #endregion
+                            //// still items to be reduced, but nothing in stock.
+                            //if (reduced > 0)
+                            //{
+                            //    return BadRequest($"Not enough quantity for productId: {product.Id}");
+                            //}
+                            //#endregion
+                        }
                     }
-
-                    //_context.Entry(orderToUpdate).State = EntityState.Modified;
                 }
 
                 var result = await TryContextSaveAsync();
