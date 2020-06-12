@@ -103,6 +103,8 @@ namespace Blob_API.Controllers
                         }
                     }
 
+
+
                     // Update state
                     orderToUpdate.State = await _context.State.FindAsync(orderRessource.State.Id);
 
@@ -121,9 +123,28 @@ namespace Blob_API.Controllers
                         // If not create it.
                         if (ordProdOrd == null)
                         {
+
+                            #region Backup Product
+                            // Add "ghost/copy/backup"-Product if no entry exists.
+                            OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd.ProductId == product.Id).FirstOrDefault();
+
+                            if (ordProd == null)
+                            {
+                                // TODO: Check values, sanitize.
+                                ordProd = new OrderedProduct()
+                                {
+                                    Name = product.Name,
+                                    Price = product.Price,
+                                    Sku = product.Sku,
+                                    Product = product
+                                };
+                                await _context.OrderedProduct.AddAsync(ordProd);
+                            }                            
+                            #endregion
+
                             ordProdOrd = new OrderedProductOrder()
                             {
-                                OrderedProduct = _context.OrderedProduct.Find(orderedProductRessource.Id),
+                                OrderedProduct = ordProd,
                                 Order = orderToUpdate,
                                 Quantity = orderedProductRessource.Quantity,
                             };
