@@ -43,11 +43,11 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
       - name: debug
-        run: ls -all /home/runner/work/blob-backend/blob-backend
-      #- name: Push to Docker Hub
-      #  uses: docker/build-push-action@v1
-      #  with:
-      #    username: ${{ secrets.DOCKERHUBUN }}
-      #    password: ${{ secrets.DOCKERHUBPW }}
-      #    repository: swpheim/blob
-      #    tag_with_ref: true
+        run: cd /home/runner/work/blob-backend/blob-backend/Blob_API
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUBUN }}
+          password: ${{ secrets.DOCKERHUBPW }}
+          repository: swpheim/blob
+          tag_with_ref: true
