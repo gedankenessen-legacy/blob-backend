@@ -44,8 +44,8 @@ jobs:
         uses: actions/checkout@v2
       #- name: ls 
       #  run: ls -all /github/workspace
-      - name: cd
-        run: cd /home/runner/work/blob-backend/blob-backend/Blob_API/
+      #- name: cd
+      #  run: cd /home/runner/work/blob-backend/blob-backend/Blob_API/
       #- name: cd
       #  run: cd /home/runner/work/blob-backend/blob-backend/Blob_API
       - name: Push to Docker Hub
@@ -54,4 +54,5 @@ jobs:
           username: ${{ secrets.DOCKERHUBUN }}
           password: ${{ secrets.DOCKERHUBPW }}
           repository: blobcd/blob
+          dockerfile: /home/runner/work/blob-backend/blob-backend/Blob_API/Dockerfile
           tag_with_ref: true
