@@ -1,0 +1,58 @@
+name: Publish Docker image
+on:
+  push:
+    branches: [ master ]
+jobs:
+  #build:
+    #name: Build files with dotnet core
+    #runs-on: ubuntu-latest
+    #steps:
+    #- uses: actions/checkout@v2
+    #- name: Setup .NET Core
+    #  uses: actions/setup-dotnet@v1
+    #  with:
+    #    dotnet-version: 3.1.101
+    #- name: Install dependencies
+    #  run: dotnet restore
+    #- name: Build
+    #  run: dotnet build --configuration Release --no-restore
+    #- name: copy dockerfile
+    #  run: cp /home/runner/work/blob-backend/blob-backend/Blob_API/Dockerfile /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
+    #- name: debug
+    #  run: ls -all /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
+    #- name: Upload build result as art.
+    #  uses: actions/upload-artifact@v2
+    #  with:
+    #    name: build_out
+    #    path: /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
+  publish:
+    #needs: build
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      #- name: Download build art.
+      #  uses: actions/download-artifact@v2
+      #  with:
+      #    name: build_out
+      #- name: debug
+      #  run: ls -all /home/runner/work/blob-backend/
+      #- name: debug
+      #  run: ls -all /home/runner/work/blob-backend/blob-backend
+      #- name: cd
+      #  run: cd /home/runner/work/blob-backend/Blob_API
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      #- name: ls 
+      #  run: ls -all /github/workspace
+      #- name: cd
+      #  run: cd /home/runner/work/blob-backend/blob-backend/Blob_API/
+      #- name: cd
+      #  run: cd /home/runner/work/blob-backend/blob-backend/Blob_API
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUBUN }}
+          password: ${{ secrets.DOCKERHUBPW }}
+          repository: blobcd/blob
+          dockerfile: /home/runner/work/blob-backend/blob-backend/Blob_API/Dockerfile
+          tag_with_ref: true
