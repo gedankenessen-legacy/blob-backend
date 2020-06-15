@@ -34,18 +34,20 @@ jobs:
       #  uses: actions/download-artifact@v2
       #  with:
       #    name: build_out
-      - name: debug
-        run: ls -all /home/runner/work/blob-backend/
-      - name: debug
-        run: ls -all /home/runner/work/blob-backend/blob-backend
-      - name: cd
-        run: cd /home/runner/work/blob-backend/Blob_API
+      #- name: debug
+      #  run: ls -all /home/runner/work/blob-backend/
+      #- name: debug
+      #  run: ls -all /home/runner/work/blob-backend/blob-backend
+      #- name: cd
+      #  run: cd /home/runner/work/blob-backend/Blob_API
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Push to Docker Hub
-        uses: docker/build-push-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUBUN }}
-          password: ${{ secrets.DOCKERHUBPW }}
-          repository: swpheim/blob
-          tag_with_ref: true
+      - name: debug
+        run: ls -all /home/runner/work/blob-backend/
+      #- name: Push to Docker Hub
+      #  uses: docker/build-push-action@v1
+      #  with:
+      #    username: ${{ secrets.DOCKERHUBUN }}
+      #    password: ${{ secrets.DOCKERHUBPW }}
+      #    repository: swpheim/blob
+      #    tag_with_ref: true
