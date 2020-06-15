@@ -35,9 +35,9 @@ jobs:
         with:
           name: build_out
       - name: debug
-        run: ls -all /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/  
+        run: ls -all /home/runner/work/blob-backend/blob-backend  
       - name: cd
-        run: cd /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
+        run: cd /home/runner/work/blob-backend/blob-backend
       - name: Push to Docker Hub
         uses: docker/build-push-action@v1
         with:
