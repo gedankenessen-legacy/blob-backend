@@ -42,12 +42,16 @@ jobs:
       #  run: cd /home/runner/work/blob-backend/Blob_API
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: debug
+      - name: ls -all /github/workspace
         run: cd /home/runner/work/blob-backend/blob-backend/Blob_API
-      - name: Push to Docker Hub
-        uses: docker/build-push-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUBUN }}
-          password: ${{ secrets.DOCKERHUBPW }}
-          repository: blobcd/blob
-          tag_with_ref: true
+      #- name: cp
+      #  run: cp /home/runner/work/blob-backend/blob-backend/Blob_API
+      #- name: cd
+      #  run: cd /home/runner/work/blob-backend/blob-backend/Blob_API
+      #- name: Push to Docker Hub
+      #  uses: docker/build-push-action@v1
+      #  with:
+      #    username: ${{ secrets.DOCKERHUBUN }}
+      #    password: ${{ secrets.DOCKERHUBPW }}
+      #    repository: blobcd/blob
+      #    tag_with_ref: true
