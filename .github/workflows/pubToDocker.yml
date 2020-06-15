@@ -49,5 +49,5 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUBUN }}
           password: ${{ secrets.DOCKERHUBPW }}
-          repository: swpheim/blob
+          repository: blobcd/blob
           tag_with_ref: true
