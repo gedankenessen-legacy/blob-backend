@@ -17,7 +17,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: copy dockerfile
-      run: cp /home/runner/work/blob-backend/blob-backend/Blob_API/dockerfile /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
+      run: cp /home/runner/work/blob-backend/blob-backend/Blob_API/Dockerfile /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
     - name: debug
       run: ls -all /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
     - name: Upload build result as art.
