@@ -16,6 +16,8 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration Release --no-restore
+    - name: copy dockerfile
+      run: cp /home/runner/work/blob-backend/blob-backend/Blob_API/dockerfile /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
     - name: debug
       run: ls -all /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
     - name: Upload build result as art.
@@ -34,8 +36,10 @@ jobs:
           name: build_out
       - name: debug
         run: ls -all /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/  
+      - name: cd
+        run: cd /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
       - name: Push to Docker Hub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.dockerhub_username }}
           password: ${{ secrets.dockerhub }}
