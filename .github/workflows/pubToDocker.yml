@@ -35,7 +35,7 @@ jobs:
       #  with:
       #    name: build_out
       - name: debug
-        run: ls -all /home/runner/work/blob-backend/blob-backend
+        run: ls -all /home/runner/
       #- name: cd
       #  run: cd /home/runner/work/blob-backend/blob-backend
       - name: Check out the repo
