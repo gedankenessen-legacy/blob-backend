@@ -16,20 +16,24 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration Release --no-restore
+    - name: debug
+      run: ls -all /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
     - name: Upload build result as art.
       uses: actions/upload-artifact@v2
       with:
         name: build_out
-        path: /build_out
+        path: /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/
   publish:
     needs: build
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     steps:
       - name: Download build art.
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2
         with:
           name: build_out
+      - name: debug
+        run: ls -all /home/runner/work/blob-backend/blob-backend/Blob_API/bin/Release/netcoreapp3.1/  
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
