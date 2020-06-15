@@ -34,8 +34,8 @@ jobs:
       #  uses: actions/download-artifact@v2
       #  with:
       #    name: build_out
-      #- name: debug
-      #  run: ls -all /home/runner/work/blob-backend/blob-backend  
+      - name: debug
+        run: ls -all /home/runner/work/blob-backend/blob-backend
       #- name: cd
       #  run: cd /home/runner/work/blob-backend/blob-backend
       - name: Check out the repo
