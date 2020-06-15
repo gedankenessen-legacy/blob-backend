@@ -42,8 +42,8 @@ jobs:
       #  run: cd /home/runner/work/blob-backend/Blob_API
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: ls -all /github/workspace
-        run: cd /home/runner/work/blob-backend/blob-backend/Blob_API
+      - name: ls 
+        run: ls -all /github/workspace
       #- name: cp
       #  run: cp /home/runner/work/blob-backend/blob-backend/Blob_API
       #- name: cd
