@@ -56,7 +56,7 @@ jobs:
           repository: blobcd/blob
           dockerfile: /home/runner/work/blob-backend/blob-backend/Blob_API/Dockerfile
           tag_with_ref: true
-      - name: Call webhook
-        uses: zzzze/webhook-trigger@v1.0.0
-        with: 
-          webhook_url: http://176.31.26.11:9001/hooks/blob_backend_redeploy 
+      #- name: Call webhook
+      #  uses: zzzze/webhook-trigger@v1.0.0
+      #  with: 
+      #    webhook_url: http://176.31.26.11:9001/hooks/blob_backend_redeploy 
