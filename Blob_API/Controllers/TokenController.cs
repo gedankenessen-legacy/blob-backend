@@ -132,6 +132,7 @@ namespace Blob_API.Controllers
 
             // Create a new authentication ticket with the user identity.
             var ticket = await CreateTicketAsync(user, roles);
+            
 
             return SignIn(ticket.Principal, ticket.Properties, ticket.AuthenticationScheme);
         }
@@ -146,6 +147,11 @@ namespace Blob_API.Controllers
             AddRolesToPrincipal(principal, roles);
 
             var ticket = new AuthenticationTicket(principal, new AuthenticationProperties(), OpenIdConnectServerDefaults.AuthenticationScheme);
+
+            // Token lifetime to 12 hours
+            ticket.SetAccessTokenLifetime(TimeSpan.FromHours(12));
+            ticket.SetAuthorizationCodeLifetime(TimeSpan.FromHours(12));
+            ticket.SetIdentityTokenLifetime(TimeSpan.FromHours(12));
 
             ticket.SetScopes(OpenIddictConstants.Scopes.Roles);
 
