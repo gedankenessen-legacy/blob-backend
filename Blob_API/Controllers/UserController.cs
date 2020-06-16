@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
-    [AllowAnonymous]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class UserController : ControllerBase
     {

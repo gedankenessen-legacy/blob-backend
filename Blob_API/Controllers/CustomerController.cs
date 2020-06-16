@@ -17,7 +17,7 @@ using Microsoft.CodeAnalysis;
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
-    //[Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class CustomerController : ControllerBase
     {

@@ -16,7 +16,7 @@ using System.Runtime.CompilerServices;
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
-    //[Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class OrderController : ControllerBase
     {

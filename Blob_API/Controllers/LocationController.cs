@@ -13,10 +13,13 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.CodeAnalysis;
 using Location = Blob_API.Model.Location;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
+using OpenIddict.Validation;
 
 namespace Blob_API.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
     [ApiController]
     public class LocationController : ControllerBase
     {
