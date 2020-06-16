@@ -136,7 +136,7 @@ namespace Blob_API.Controllers
 
                     if (customerToUpdate.Lastname != customerRessource.Lastname)
                     {
-                        customerToUpdate.Firstname = customerRessource.Firstname;
+                        customerToUpdate.Lastname = customerRessource.Lastname;
                     }
 
                     if (customerToUpdate.Address.Id != customerRessource.Address.Id)
