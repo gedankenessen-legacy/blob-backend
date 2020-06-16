@@ -139,6 +139,11 @@ namespace Blob_API.Controllers
                         customerToUpdate.Firstname = customerRessource.Firstname;
                     }
 
+                    if (customerToUpdate.Address.Id != customerRessource.Address.Id)
+                    {
+                        customerToUpdate.Address = address;
+                    }
+
 
 
 
