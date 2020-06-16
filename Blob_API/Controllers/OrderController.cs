@@ -114,7 +114,13 @@ namespace Blob_API.Controllers
                         Product product = _context.Product.Find(orderedProductRessource.Id);
                         if (product == null)
                         {
-                            return NotFound($"The ordered product with the ID={orderedProductRessource.Id} was not found.");
+                            // if the product is not backuped, error...
+                            OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd.Id == orderedProductRessource.Id).FirstOrDefault();
+
+                            if (ordProd == null)
+                            {
+                                return NotFound($"The ordered product with the ID={orderedProductRessource.Id} was not found.");
+                            }
                         }
 
                         // Check if product is already in OrderedProductOrder table.
@@ -179,13 +185,13 @@ namespace Blob_API.Controllers
                                 var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
                                 if (productsAtLocation == null)
                                 {
-                                    return BadRequest($"Not enough quantity for productId: {product.Id}");
+                                    return BadRequest($"Not enough quantity for productId: {orderedProductRessource.Id}");
                                 }
 
                                 productsAtLocation[0].Quantity += (uint)delta;
 
                                 if (productsAtLocation[0].Quantity < 0)
-                                    return BadRequest($"Not enough quantity for productId: {product.Id}");
+                                    return BadRequest($"Not enough quantity for productId: {orderedProductRessource.Id}");
 
                             }
 
