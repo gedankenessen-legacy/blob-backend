@@ -103,8 +103,6 @@ namespace Blob_API.Controllers
                         }
                     }
 
-
-
                     // Update state
                     orderToUpdate.State = await _context.State.FindAsync(orderRessource.State.Id);
 
@@ -132,6 +130,8 @@ namespace Blob_API.Controllers
 
                             #region Backup Product
                             // Add "ghost/copy/backup"-Product if no entry exists.
+                            if (product != null) ordProd = _context.OrderedProduct.Where(ordProd => ordProd.ProductId == product.Id).FirstOrDefault();
+
                             if (ordProd == null)
                             {
                                 // TODO: Check values, sanitize.
@@ -224,6 +224,24 @@ namespace Blob_API.Controllers
                             //#endregion
                         }
                     }
+
+                    listOfOrderedProduct.ForEach(orderedProduct =>
+                    {
+                        if (orderedProduct.OrderId == orderRessource.Id && _context.Entry(orderedProduct).State == EntityState.Deleted)
+                        {
+                            var loactionWithThisProduct = _context.LocationProduct.AsNoTracking().Where(locProd => locProd.ProductId == orderedProduct.OrderedProduct.ProductId).FirstOrDefault();
+
+                            if (loactionWithThisProduct != null)
+                            {
+                                var loc_prod = _context.LocationProduct.Find(loactionWithThisProduct.LocationId, orderedProduct.OrderedProduct.ProductId);
+
+                                if (loc_prod != null)
+                                {
+                                    loc_prod.Quantity += orderedProduct.Quantity;
+                                } 
+                            }   
+                        }
+                    });
                 }
 
                 var result = await TryContextSaveAsync();
