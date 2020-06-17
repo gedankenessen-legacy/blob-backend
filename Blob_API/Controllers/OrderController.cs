@@ -110,13 +110,13 @@ namespace Blob_API.Controllers
 
                     foreach (var orderedProductRessource in orderRessource.OrderedProducts)
                     {
+                        OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd.Id == orderedProductRessource.Id).FirstOrDefault();
+
                         // check if the product exists.
                         Product product = _context.Product.Find(orderedProductRessource.Id);
                         if (product == null)
                         {
                             // if the product is not backuped, error...
-                            OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd.Id == orderedProductRessource.Id).FirstOrDefault();
-
                             if (ordProd == null)
                             {
                                 return NotFound($"The ordered product with the ID={orderedProductRessource.Id} was not found.");
@@ -132,8 +132,6 @@ namespace Blob_API.Controllers
 
                             #region Backup Product
                             // Add "ghost/copy/backup"-Product if no entry exists.
-                            OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd.ProductId == product.Id).FirstOrDefault();
-
                             if (ordProd == null)
                             {
                                 // TODO: Check values, sanitize.
@@ -158,7 +156,7 @@ namespace Blob_API.Controllers
 
                             #region Reduce Stock                       
                             // Reduce the stock of the item on the location with the highest quantity.
-                            var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
+                            var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == ordProd.Product.Id).ToList();
                             if (productsAtLocation == null)
                             {
                                 return BadRequest($"Not enough quantity for productId: {product.Id}");
@@ -182,7 +180,7 @@ namespace Blob_API.Controllers
                             // Reduce Stock
                             if (delta != 0)
                             {
-                                var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
+                                var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == ordProd.Product.Id).ToList();
                                 if (productsAtLocation == null)
                                 {
                                     return BadRequest($"Not enough quantity for productId: {orderedProductRessource.Id}");
