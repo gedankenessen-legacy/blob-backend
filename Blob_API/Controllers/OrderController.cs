@@ -191,20 +191,26 @@ namespace Blob_API.Controllers
                             int delta = (int)ordProdOrd.Quantity - (int)orderedProductRessource.Quantity;
                             ordProdOrd.Quantity = orderedProductRessource.Quantity;
 
-                            // Reduce Stock
-                            if (delta != 0)
+                            var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == ordProd.Product.Id).ToList();
+                            if (productsAtLocation == null)
                             {
-                                var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == ordProd.Product.Id).ToList();
-                                if (productsAtLocation == null)
-                                {
-                                    return BadRequest($"Not enough quantity for productId: {orderedProductRessource.Id}");
-                                }
+                                return BadRequest($"Not enough quantity for productId: {orderedProductRessource.Id}");
+                            }
 
+                            // withdraw stock
+                            if (delta > 0)
+                            {
+                                var temp = productsAtLocation[0].Quantity;
                                 productsAtLocation[0].Quantity += (uint)delta;
 
-                                if (productsAtLocation[0].Quantity < 0)
-                                    return BadRequest($"Not enough quantity for productId: {orderedProductRessource.Id}");
-
+                                if (temp + delta < 0)
+                                    return BadRequest($"Not enough quantity for orderedProductId: {orderedProductRessource.Id}");
+                            }
+                            // reduce stock
+                            else if (delta < 0)
+                            {
+                                if (ReduceStock(orderedProductRessource, productsAtLocation) > 0)
+                                    return BadRequest($"Not enough quantity for orderedProductId: {orderedProductRessource.Id}");
                             }
 
                             _context.Entry(ordProdOrd).State = EntityState.Modified;
