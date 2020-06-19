@@ -108,7 +108,15 @@ namespace Blob_API.Controllers
 
                     foreach (var orderedProductRessource in orderRessource.OrderedProducts)
                     {
-                        OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd.Id == orderedProductRessource.Id).FirstOrDefault();
+                        OrderedProduct ordProd;
+
+                        // Search the product that is already backup, but what if the orderedProduct is new to the order?
+                        if (orderedProductRessource.Name == null && orderedProductRessource.Sku == null)
+                            ordProd = _context.OrderedProduct.Where(ordProd => ordProd.Product.Id == orderedProductRessource.Id).FirstOrDefault();
+                        else
+                            ordProd = _context.OrderedProduct.Where(ordProd => ordProd.Id == orderedProductRessource.Id).FirstOrDefault();
+
+ 
 
                         // check if the product exists.
                         Product product = _context.Product.Find(orderedProductRessource.Id);
@@ -122,7 +130,11 @@ namespace Blob_API.Controllers
                         }
 
                         // Check if product is already in OrderedProductOrder table.
-                        OrderedProductOrder ordProdOrd = _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id);
+                        OrderedProductOrder ordProdOrd;
+                        if (orderedProductRessource.Name == null && orderedProductRessource.Sku == null)
+                            ordProdOrd = _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id).OrderedProduct.ProductId == ordProd.ProductId ? _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id) : null;
+                        else
+                            ordProdOrd = _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id);
 
                         // If not create it.
                         if (ordProdOrd == null)
@@ -199,29 +211,7 @@ namespace Blob_API.Controllers
                         // Remove the delete flag if product is in order payload.
                         if (_context.Entry(ordProdOrd).State == EntityState.Deleted)
                         {
-                            _context.Entry(ordProdOrd).State = EntityState.Modified;
-
-                            
-                        }
-                        else
-                        {
-                            //#region Reduce Stock                       
-                            //// Reduce the stock of the item on the location with the highest quantity.
-                            //var productsAtLocation = _context.LocationProduct.OrderByDescending(x => x.Quantity).Where(x => x.ProductId == product.Id).ToList();
-                            //if (productsAtLocation == null)
-                            //{
-                            //    return BadRequest($"Not enough quantity for productId: {product.Id}");
-                            //}
-
-                            //// Check if enough products in stock and reduce.
-                            //uint reduced = ReduceStock(orderedProductRessource, productsAtLocation);
-
-                            //// still items to be reduced, but nothing in stock.
-                            //if (reduced > 0)
-                            //{
-                            //    return BadRequest($"Not enough quantity for productId: {product.Id}");
-                            //}
-                            //#endregion
+                            _context.Entry(ordProdOrd).State = EntityState.Modified;                        
                         }
                     }
 
