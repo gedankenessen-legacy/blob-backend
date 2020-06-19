@@ -130,9 +130,11 @@ namespace Blob_API.Controllers
                         }
 
                         // Check if product is already in OrderedProductOrder table.
-                        OrderedProductOrder ordProdOrd;
+                        OrderedProductOrder ordProdOrd = null;
                         if (orderedProductRessource.Name == null && orderedProductRessource.Sku == null)
-                            ordProdOrd = _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id).OrderedProduct.ProductId == ordProd.ProductId ? _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id) : null;
+                        { 
+                           if (ordProd!= null) ordProdOrd = _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id)?.OrderedProduct.ProductId == ordProd.ProductId ? _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id) : null;
+                        }                        
                         else
                             ordProdOrd = _context.OrderedProductOrder.Find(orderedProductRessource.Id, orderRessource.Id);
 
