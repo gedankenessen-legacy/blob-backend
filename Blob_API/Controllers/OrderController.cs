@@ -208,8 +208,8 @@ namespace Blob_API.Controllers
                             }
                             // reduce stock
                             else if (delta < 0)
-                            {
-                                if (ReduceStock(orderedProductRessource, productsAtLocation) > 0)
+                            {                               
+                                if (ReduceStock(orderedProductRessource, productsAtLocation, (uint)(delta*-1)) > 0)
                                     return BadRequest($"Not enough quantity for orderedProductId: {orderedProductRessource.Id}");
                             }
 
@@ -341,11 +341,11 @@ namespace Blob_API.Controllers
                     #region Backup Product
                     // Add "ghost/copy/backup"-Product if no entry exists.
                     uint orderedProductId = 0;
-                    OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).FirstOrDefault();
+                    OrderedProduct ordProd = _context.OrderedProduct.Where(ordProd => ordProd.ProductId == orderedProduct.Id).FirstOrDefault();
 
                     if (ordProd != null)
                     {
-                        orderedProductId = _context.OrderedProduct.Where(ordProd => ordProd == orderedProduct).FirstOrDefault().Id;
+                        orderedProductId = _context.OrderedProduct.Where(ordProd => ordProd.ProductId == orderedProduct.Id).FirstOrDefault().Id;
                     }
 
                     if (orderedProductId == 0)
@@ -414,9 +414,14 @@ namespace Blob_API.Controllers
         /// <param name="orderedProductRessource">The product which stock needs to be reduced</param>
         /// <param name="productsAtLocation">List of Locations where the product is in stock</param>
         /// <returns>0 if the stock is reduced successfully, if >0 not enough items in stock</returns>
-        private uint ReduceStock(OrderedProductRessource orderedProductRessource, List<LocationProduct> productsAtLocation)
+        private uint ReduceStock(OrderedProductRessource orderedProductRessource, List<LocationProduct> productsAtLocation, uint delta = 0)
         {
-            var reduced = orderedProductRessource.Quantity;
+            uint reduced;
+            if (delta == 0)
+                reduced = orderedProductRessource.Quantity;
+            else
+                reduced = delta;
+
             foreach (var productAtLocation in productsAtLocation)
             {
                 if (reduced > 0)
